@@ -1,9 +1,13 @@
 #include <Arduino.h>
 #include "STSServoDriver.h"
+#include "cmd_structs.h"
+#include "cmd_handlers.h"
 
 #define DEBUG
 #define SERIAL_COMMS Serial4
 
+
+#define SERVO_MAX_COMD 4096
 
 STSServoDriver servos;
 
@@ -15,91 +19,23 @@ enum cmd_identifier {
   get_speed = 4,
   get_position = 5,
   get_volt = 6,
-  get_temp = 7
+  get_temp = 7,
+  get_isMoving = 8,
+  get_all = 9,
+  set_mode = 10,
+  set_position_async = 11,
+  set_speed_async = 12,
+  trigger_action = 13
 };
 
 enum reply_identifier {
   reply_get_speed_id = 0,
   reply_get_position_id = 1,
   reply_get_volt_id = 2,
-  reply_get_temp_id = 3
+  reply_get_temp_id = 3,
+  reply_get_isMoving_id = 4,
+  reply_get_all_id = 5
 };
-
-struct cmdstruct_set_serial_id {
-  uint8_t serialPort_id;
-};
-
-struct cmdstruct_enable_driver {
-  uint8_t servo_id; // 1 byte
-  bool enable;     //1 byte
-};
-
-struct cmdstruct_set_speed {
-  uint8_t servo_id; //1 byte
-  int16_t speed;    //2 byte
-};
-
-struct cmdstruct_set_position {
-  uint8_t servo_id; //1 byte
-  int16_t position; // 2 byte
-};
-
-struct cmdstruct_get_position {
-  uint8_t servo_id; //1 byte
-};
-
-struct cmdstruct_get_speed {
-  uint8_t servo_id; //1 byte
-};
-
-struct cmdstruct_get_volt {
-  uint8_t servo_id; //1 byte
-};
-
-struct cmdstruct_get_temp {
-  uint8_t servo_id; //1 byte
-};
-
-struct replystruct_get_position {
-  uint8_t identifier; //1 byte
-  uint8_t servo_id; //1 byte
-  int16_t position; // 1 byte
-};
-
-struct replystruct_get_speed {
-  uint8_t identifier; //1 byte
-  uint8_t servo_id; //1 byte
-  int16_t speed;    //1 byte
-};
-
-struct replystruct_get_volt {
-  uint8_t identifier; //1 byte
-  uint8_t servo_id; //1 byte
-  int8_t volt;     //1 byte
-};
-
-struct replystruct_get_temp {
-  uint8_t identifier; //1 byte
-  uint8_t servo_id; //1 byte
-  int8_t temp;     //1 byte
-};
-
-//command handlers
-void set_serial_id_cmd_hanlder();
-void enable_servo_cmd_hanlder();
-void set_speed_cmd_hanlder();
-void set_position_cmd_hanlder();
-void get_speed_cmd_hanlder();
-void get_position_cmd_hanlder();
-void get_volt_cmd_hanlder();
-void get_temp_cmd_hanlder();
-
-typedef void (*cmd_handler) ();
-cmd_handler serial_cmd_handlers[] = {set_serial_id_cmd_hanlder, enable_servo_cmd_hanlder, set_speed_cmd_hanlder, set_position_cmd_hanlder, get_speed_cmd_hanlder, get_position_cmd_hanlder, get_volt_cmd_hanlder, get_temp_cmd_hanlder};
-
-// array of servo ids, dynamically sized at runtime
-//int* servo_ids = NULL;
-//int num_servos = 0;
 
 
 void setup() {
@@ -113,18 +49,15 @@ digitalWrite(LED_BUILTIN, HIGH);
   Serial.println("Starting Teensy");
 #endif
   SERIAL_COMMS.begin(115200);
-  
-  servos.init(1);
 }
 
 
 void loop()
 {
-  servos.setTargetVelocity(9, 1000);
-  return;
   //read serial message if available
   if (SERIAL_COMMS.available() > 0)
   {
+    //check if there is an end marker in the data
     #ifdef DEBUG
     Serial.println("received message");
     #endif
@@ -160,7 +93,10 @@ void set_serial_id_cmd_hanlder()
 
 void enable_servo_cmd_hanlder()
 {
-  //not implemeneted yet
+  // Read the command struct from the serial buffer to the correct struct
+  cmdstruct_enable_servo cmd_enable_servo;
+  SERIAL_COMMS.readBytes((char*) &cmd_enable_servo, sizeof(cmd_enable_servo));
+  // todo: implement
 }
 
 void set_speed_cmd_hanlder()
@@ -183,7 +119,6 @@ void set_speed_cmd_hanlder()
   //  Serial.print(" ");
   //}
   //#endif
-
 
   #ifdef DEBUG
   Serial.print("cmd_set_speed.servo_id: ");
@@ -254,14 +189,28 @@ void get_position_cmd_hanlder()
   replystruct_get_position reply_get_position;
   reply_get_position.identifier = reply_get_position_id;
   reply_get_position.servo_id = servo_id;
-  reply_get_position.position = position;
+  reply_get_position.position = (int16_t)((position - SERVO_MAX_COMD/2) * 36000 / SERVO_MAX_COMD);;
 
   SERIAL_COMMS.write((uint8_t*) &reply_get_position, sizeof(replystruct_get_position));
 }
 
 void get_volt_cmd_hanlder()
 {
-  //not yet implemented
+  // Read the command struct from the serial buffer to the correct struct
+  cmdstruct_get_volt cmd_get_volt;
+  SERIAL_COMMS.readBytes((char*) &cmd_get_volt, sizeof(cmd_get_volt));
+
+  //retrieve data from command struct
+  int servo_id = cmd_get_volt.servo_id;
+  int volt = servos.getCurrentDriveVoltage(servo_id);
+
+  //send reply
+  replystruct_get_volt reply_get_volt;
+  reply_get_volt.identifier = reply_get_volt_id;
+  reply_get_volt.servo_id = servo_id;
+  reply_get_volt.volt = volt;
+
+  SERIAL_COMMS.write((uint8_t*) &reply_get_volt, sizeof(replystruct_get_volt));
 }
 
 void get_temp_cmd_hanlder()
@@ -283,8 +232,122 @@ void get_temp_cmd_hanlder()
   SERIAL_COMMS.write((uint8_t*) &reply_get_temp, sizeof(replystruct_get_temp));
 }
 
+void get_isMoving_cmd_hanlder()
+{
+  // Read the command struct from the serial buffer to the correct struct
+  cmdstruct_get_isMoving cmd_get_isMoving;
+  SERIAL_COMMS.readBytes((char*) &cmd_get_isMoving, sizeof(cmd_get_isMoving));
+
+  //retrieve data from command struct
+  int servo_id = cmd_get_isMoving.servo_id;
+  bool isMoving = servos.isMoving(servo_id);
+
+  //send reply
+  replystruct_get_isMoving reply_get_isMoving;
+  reply_get_isMoving.identifier = reply_get_isMoving_id;
+  reply_get_isMoving.servo_id = servo_id;
+  reply_get_isMoving.isMoving = isMoving;
+
+  SERIAL_COMMS.write((uint8_t*) &reply_get_isMoving, sizeof(replystruct_get_isMoving));
+}
+
+void get_all_cmd_hanlder(){
+  // Read the command struct from the serial buffer to the correct struct
+  cmdstruct_get_all cmg_get_all;
+  SERIAL_COMMS.readBytes((char*) &cmg_get_all, sizeof(cmg_get_all));
+
+  //retrieve data from command struct
+  int servo_id = cmg_get_all.servo_id;
+  int position = servos.getCurrentPosition(servo_id);
+  int speed = servos.getCurrentSpeed(servo_id);
+  int volt = servos.getCurrentDriveVoltage(servo_id);
+  int temp = servos.getCurrentTemperature(servo_id);
+  bool isMoving = servos.isMoving(servo_id);
+
+  //send reply
+  replystruct_get_all reply_get_all;
+  reply_get_all.identifier = reply_get_all_id;
+  reply_get_all.servo_id = servo_id;
+  reply_get_all.position = position;
+  reply_get_all.speed = speed;
+  reply_get_all.volt = volt;
+  reply_get_all.temp = temp;
+  reply_get_all.isMoving = isMoving;
+
+  SERIAL_COMMS.write((uint8_t*) &reply_get_all, sizeof(replystruct_get_all));
+}
+
+void set_position_async_cmd_hanlder()
+{
+  // Read the command struct from the serial buffer to the correct struct
+  cmdstruct_set_position cmd_set_position_async;
+  byte serial_buffer[sizeof(cmd_set_position_async) - 1];
+  SERIAL_COMMS.readBytes((char*) &serial_buffer, sizeof(cmd_set_position_async) - 1);
+
+  cmd_set_position_async.servo_id = serial_buffer[0];
+  cmd_set_position_async.position = (serial_buffer[2] << 8) | serial_buffer[1];
+
+  #ifdef DEBUG
+  Serial.print("cmd_set_position_async.servo_id: ");
+  Serial.println(cmd_set_position_async.servo_id);
+  Serial.print("cmd_set_position_async.position: ");
+  Serial.println(cmd_set_position_async.position);
+  #endif
+
+  //retrieve data from command struct
+  int servo_id = cmd_set_position_async.servo_id;
+  int position = cmd_set_position_async.position;
+  servos.setTargetPosition(servo_id, position, true);
+}
+
+void set_speed_async_cmd_hanlder()
+{
+  // Read the command struct from the serial buffer to the correct struct
+  cmdstruct_set_speed cmd_set_speed_async;
+
+  //read the message into a buffer
+  byte serial_buffer[sizeof(cmd_set_speed_async) - 1];
+  SERIAL_COMMS.readBytes((char*) &serial_buffer, sizeof(cmd_set_speed_async) - 1);
+
+  cmd_set_speed_async.servo_id = serial_buffer[0];
+  cmd_set_speed_async.speed = (serial_buffer[2] << 8) | serial_buffer[1];
+
+  #ifdef DEBUG
+  Serial.print("cmd_set_speed_async.servo_id: ");
+  Serial.println(cmd_set_speed_async.servo_id);
+  Serial.print("cmd_set_speed_async.speed: ");
+  Serial.println(cmd_set_speed_async.speed);
+  #endif
+
+  //retrieve data from command struct
+  int servo_id = cmd_set_speed_async.servo_id;
+  int speed = cmd_set_speed_async.speed;
+  servos.setTargetVelocity(servo_id, speed, true);
+}
+
+void trigger_action_cmd_hanlder()
+{
+  servos.trigerAction();
+}
+
+void set_mode_cmd_hanlder()
+{
+  // Read the command struct from the serial buffer to the correct struct
+  cmdstruct_set_mode cmd_set_mode;
+  SERIAL_COMMS.readBytes((char*) &cmd_set_mode, sizeof(cmd_set_mode));
+
+  //todo implement
+}
 
 
+
+uint16_t CompactBytes(uint8_t DataL, uint8_t DataH) {
+  uint16_t Data;
+  Data = DataL;
+  Data <<= 8;
+  Data |= DataH;
+  return Data;
+}
 
 
 

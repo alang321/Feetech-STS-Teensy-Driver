@@ -111,6 +111,11 @@ class STSServoDriver
         /// \return Current, in A.
         int getCurrentCurrent(byte const& servoId);
 
+        /// \brief Get current servo drive voltage.
+        /// \param[in] servoId ID of the servo
+        /// \return Current, in A.
+        int getCurrentDriveVoltage(byte const& servoId);
+
         /// \brief Check if the servo is moving
         /// \param[in] servoId ID of the servo
         /// \return True if moving, false otherwise.

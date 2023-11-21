@@ -95,6 +95,12 @@ bool STSServoDriver::setId(byte const& oldServoId, byte const& newServoId)
     return ping(newServoId);
 }
 
+int STSServoDriver::getCurrentDriveVoltage(byte const& servoId)
+{
+    int16_t drive_voltage = readTwoBytesRegister(servoId, STSRegisters::CURRENT_POSITION);
+    return drive_voltage;
+}
+
 
 int STSServoDriver::getCurrentPosition(byte const& servoId)
 {
