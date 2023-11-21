@@ -72,11 +72,10 @@ class STSServoDriver
 
         /// \brief Initialize the servo driver.
         ///
-        /// \param dirPin Pin used for setting communication direction
         /// \param serialPort Serial port, default is Serial
         /// \param baudRate Baud rate, default 1Mbps
         /// \returns  True on success (at least one servo responds to ping)
-        bool init(byte const& dirPin, HardwareSerial *serialPort = nullptr, long const& baudRate = 1000000);
+        bool init(int serial_id, long const& baudRate = 1000000, bool doPing = false);
 
         /// \brief Ping servo
         /// \param[in] servoId ID of the servo
@@ -176,6 +175,9 @@ class STSServoDriver
         /// \brief Clear internal device error.
         // void clearError();
 
+        /// \brief Enable/disable open drain mode on the serial port. Tristate buffer stuff
+        void serialEnableOpenDrain(bool enable);
+
         /// \brief Send a message to the servos.
         /// \param[in] servoId ID of the servo
         /// \param[in] commandID Command id
@@ -225,6 +227,31 @@ class STSServoDriver
                             byte *outputBuffer);
 
         HardwareSerial *port_;
-        byte dirPin_;     ///< Direction pin number.
+        IMXRT_LPUART_t* s_pkuart_;
+
+
+        IMXRT_LPUART_t* pkuarts[8] = {
+            &IMXRT_LPUART6,  // underlying hardware for Serial
+            &IMXRT_LPUART6,  // underlying hardware for Serial1
+            &IMXRT_LPUART4,  // underlying hardware for Serial2
+            &IMXRT_LPUART2,  // underlying hardware for Serial3
+            &IMXRT_LPUART3,  // underlying hardware for Serial4
+            &IMXRT_LPUART8,  // underlying hardware for Serial5
+            &IMXRT_LPUART1,  // underlying hardware for Serial6
+            &IMXRT_LPUART7   // underlying hardware for Serial7
+        };
+
+        //array of serial ports by id
+        HardwareSerial* serialPorts[8] = {
+            &Serial1,
+            &Serial1,
+            &Serial2,
+            &Serial3,
+            &Serial4,
+            &Serial5,
+            &Serial6,
+            &Serial7
+        };
+
 };
 #endif

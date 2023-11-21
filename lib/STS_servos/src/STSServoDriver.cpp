@@ -12,31 +12,48 @@ namespace instruction
 };
 
 
-STSServoDriver::STSServoDriver():
-    dirPin_(0)
+STSServoDriver::STSServoDriver()
 {
 }
 
 
-bool STSServoDriver::init(byte const& dirPin, HardwareSerial *serialPort,long const& baudRate)
+bool STSServoDriver::init(int serial_id, long const& baudRate, bool doPing)
 {
     #ifdef SERIAL_H
     if (serialPort == nullptr)
         serialPort = &Serial;
     #endif
     // Open port
-    port_ = serialPort;
+    // get the serial port by the passed id
+    port_ = serialPorts[serial_id];
     port_->begin(baudRate);
-    dirPin_ = dirPin;
-    pinMode(dirPin_, OUTPUT);
 
-    // Test that a servo is present.
-    for (byte i = 0; i < 0xFE; i++)
-        if (ping(i))
-            return true;
-    return false;
+    s_pkuart_ = pkuarts[serial_id];
+
+    serialEnableOpenDrain(true);
+    s_pkuart_->CTRL |= LPUART_CTRL_LOOPS | LPUART_CTRL_RSRC;
+
+    if (doPing){
+        // Test that a servo is present.
+        for (byte i = 0; i < 0xFE; i++){
+            //Serial.print("pinging servo ");
+            //Serial.println(i);
+            if (ping(i)) return true;
+        }
+    }
+    
+    return !doPing;
 }
 
+void STSServoDriver::serialEnableOpenDrain(bool enable)
+{
+    if (enable) {
+        port_->flush();                         // Make sure we output everything first before changing state.
+        s_pkuart_->CTRL &= ~LPUART_CTRL_TXDIR;  // Set in to RX Mode...
+    } else {
+        s_pkuart_->CTRL |= LPUART_CTRL_TXDIR;  // Set in to TX Mode...
+    }
+}
 
 bool STSServoDriver::ping(byte const& servoId)
 {
@@ -47,11 +64,15 @@ bool STSServoDriver::ping(byte const& servoId)
                            response);
     // Failed to send
     if (send != 6)
+    {
         return false;
+    }
     // Read response
     int rd = recieveMessage(servoId, 1, response);
     if (rd < 0)
+    {
         return false;
+    }
     return response[0] == 0x00;
 }
 
@@ -146,9 +167,10 @@ int STSServoDriver::sendMessage(byte const& servoId,
     }
     message[5 + paramLength] = ~checksum;
 
-    digitalWrite(dirPin_, HIGH);
+    port_->clear();
+    serialEnableOpenDrain(false);
     int ret = port_->write(message, 6 + paramLength);
-    digitalWrite(dirPin_, LOW);
+    serialEnableOpenDrain(true);
     // Give time for the message to be processed.
     delayMicroseconds(200);
     return ret;
@@ -240,7 +262,7 @@ int STSServoDriver::recieveMessage(byte const& servoId,
                                    byte const& readLength,
                                    byte *outputBuffer)
 {
-    digitalWrite(dirPin_, LOW);
+    serialEnableOpenDrain(true);
     byte result[readLength + 5];
     size_t rd = port_->readBytes(result, readLength + 5);
     if (rd != (unsigned short)(readLength + 5))
