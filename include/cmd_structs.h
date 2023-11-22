@@ -24,6 +24,12 @@ struct cmdstruct_set_mode {
   uint8_t mode;     //1 byte
 };
 
+struct cmdstruct_set_motor_speed{
+  uint8_t motor_id; //1 byte
+  uint16_t pwm;    //2 byte
+};
+
+
 struct cmdstruct_get_position {
   uint8_t servo_id; //1 byte
 };

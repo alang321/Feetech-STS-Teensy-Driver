@@ -2,9 +2,15 @@
 #include "STSServoDriver.h"
 #include "cmd_structs.h"
 #include "cmd_handlers.h"
+#include <Servo.h>
 
 #define DEBUG
 #define SERIAL_COMMS Serial4
+
+#define MOTOR1_PWM_PIN 18
+#define MOTOR2_PWM_PIN 19
+
+#define MOTOR_INITIAL_PWM 1000
 
 
 #define SERVO_MAX_COMD 4096
@@ -25,7 +31,8 @@ enum cmd_identifier {
   set_mode = 10,
   set_position_async = 11,
   set_speed_async = 12,
-  trigger_action = 13
+  trigger_action = 13,
+  set_motor_speed = 14
 };
 
 enum reply_identifier {
@@ -36,6 +43,15 @@ enum reply_identifier {
   reply_get_isMoving_id = 4,
   reply_get_all_id = 5
 };
+
+enum motor_selectors {
+  motor1 = 1,
+  motor2 = 2,
+  all_motors = 0
+};
+
+Servo ESC1;     // create servo object to control the ESC1
+Servo ESC2;     // create servo object to control the ESC2
 
 
 void setup() {
@@ -49,6 +65,12 @@ digitalWrite(LED_BUILTIN, HIGH);
   Serial.println("Starting Teensy");
 #endif
   SERIAL_COMMS.begin(115200);
+
+  //initialize the motor pins
+  ESC1.attach(MOTOR1_PWM_PIN,1000,2000); // (pin, min pulse width, max pulse width in microseconds) 
+  ESC2.attach(MOTOR2_PWM_PIN,1000,2000); // (pin, min pulse width, max pulse width in microseconds)
+  ESC1.writeMicroseconds(MOTOR_INITIAL_PWM);
+  ESC2.writeMicroseconds(MOTOR_INITIAL_PWM);
 }
 
 
@@ -339,14 +361,24 @@ void set_mode_cmd_hanlder()
   //todo implement
 }
 
+void set_motor_speed_cmd_hanlder()
+{
+  // Read the command struct from the serial buffer to the correct struct
+  cmdstruct_set_motor_speed cmd_set_motor_speed;
+  SERIAL_COMMS.readBytes((char*) &cmd_set_motor_speed, sizeof(cmd_set_motor_speed));
 
-
-uint16_t CompactBytes(uint8_t DataL, uint8_t DataH) {
-  uint16_t Data;
-  Data = DataL;
-  Data <<= 8;
-  Data |= DataH;
-  return Data;
+  //retrieve data from command struct
+  int motor_id = cmd_set_motor_speed.motor_id;
+  int pwm = cmd_set_motor_speed.pwm;
+  
+  if (motor_id == motor1 || motor_id == all_motors)
+  {
+    ESC1.writeMicroseconds(pwm);
+  }
+  if (motor_id == motor2 || motor_id == all_motors)
+  {
+    ESC2.writeMicroseconds(pwm);
+  }
 }
 
 

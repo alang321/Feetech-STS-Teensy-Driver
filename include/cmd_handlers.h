@@ -15,6 +15,7 @@ void set_mode_cmd_hanlder();
 void set_position_async_cmd_hanlder();
 void set_speed_async_cmd_hanlder();
 void trigger_action_cmd_hanlder();
+void set_motor_speed_cmd_hanlder();
 
 typedef void (*cmd_handler) ();
 cmd_handler serial_cmd_handlers[] = { set_serial_id_cmd_hanlder, 
@@ -30,5 +31,6 @@ cmd_handler serial_cmd_handlers[] = { set_serial_id_cmd_hanlder,
                                       set_mode_cmd_hanlder,
                                       set_position_async_cmd_hanlder,
                                       set_speed_async_cmd_hanlder,
-                                      trigger_action_cmd_hanlder};
+                                      trigger_action_cmd_hanlder,
+                                      set_motor_speed_cmd_hanlder};
 
