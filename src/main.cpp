@@ -299,16 +299,34 @@ void get_isMoving_cmd_hanlder()
 
 void get_all_cmd_hanlder(){
   // Read the command struct from the serial buffer to the correct struct
-  cmdstruct_get_all cmg_get_all;
-  SERIAL_COMMS.readBytes((char*) &cmg_get_all, sizeof(cmg_get_all));
+  cmdstruct_get_all cmd_get_all;
+  SERIAL_COMMS.readBytes((char*) &cmd_get_all, sizeof(cmd_get_all));
+
+  #ifdef DEBUG
+  Serial.print("cmd_get_all.servo_id: ");
+  Serial.println(cmd_get_all.servo_id);
+  #endif
 
   //retrieve data from command struct
-  int servo_id = cmg_get_all.servo_id;
-  int position = servos.getCurrentPosition(servo_id);
-  int speed = servos.getCurrentSpeed(servo_id);
-  int volt = servos.getCurrentDriveVoltage(servo_id);
-  int temp = servos.getCurrentTemperature(servo_id);
+  uint8_t servo_id = cmd_get_all.servo_id;
+  int16_t position = servos.getCurrentPosition(servo_id);
+  int16_t speed = servos.getCurrentSpeed(servo_id);
+  int8_t volt = servos.getCurrentDriveVoltage(servo_id);
+  int8_t temp = servos.getCurrentTemperature(servo_id);
   bool isMoving = servos.isMoving(servo_id);
+
+  #ifdef DEBUG
+  Serial.print("position: ");
+  Serial.println(position);
+  Serial.print("speed: ");
+  Serial.println(speed);
+  Serial.print("volt: ");
+  Serial.println(volt);
+  Serial.print("temp: ");
+  Serial.println(temp);
+  Serial.print("isMoving: ");
+  Serial.println(isMoving);
+  #endif
 
   //send reply
   replystruct_get_all reply_get_all;
