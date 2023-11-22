@@ -20,6 +20,8 @@
 //weird servo stuff
 #define SERVO_MAX_COMD 4096
 
+void sendData(uint8_t* data, size_t length);
+
 STSServoDriver servos;
 
 enum cmd_identifier {
@@ -89,38 +91,44 @@ digitalWrite(LED_BUILTIN, HIGH);
 
 void loop()
 {
-  //measure time between received messages
+  //read the first byte in the serial buffer
+  byte first_byte = SERIAL_COMMS.read();
 
-
-  //read serial message if available
-  if (SERIAL_COMMS.available() > 0)
+  //check if it is the start marker
+  if (first_byte == 0xFF)
   {
-    #ifdef DEBUG
-    unsigned long current_time = millis();
+    //read the second byte in the serial buffer
+    byte second_byte = SERIAL_COMMS.read();
 
-    unsigned long time_since_last_message = current_time - last_time;
-    Serial.print("time since last message: ");
-    Serial.println(time_since_last_message);
+    //check if it is the start marker
+    if (second_byte == 0xFF)
+    {
+      #ifdef DEBUG
+      unsigned long current_time = millis();
 
-    last_time = current_time;
-    #endif
+      unsigned long time_since_last_message = current_time - last_time;
+      Serial.print("Received start marker, time since last message: ");
+      Serial.println(time_since_last_message);
 
-    //check if there is an end marker in the data
-    #ifdef DEBUG
-    Serial.println("received message");
-    #endif
+      last_time = current_time;
+      #endif
 
-    // Read the command struct from the serial buffer
-    uint8_t cmd_id = 0;
-    SERIAL_COMMS.readBytes((char*) &cmd_id, 1);
+      #ifdef DEBUG
+      Serial.println("received message");
+      #endif
 
-    #ifdef DEBUG
-    Serial.print("cmd_id: ");
-    Serial.println(cmd_id);
-    #endif
+      // Read the command id
+      uint8_t cmd_id = 0;
+      SERIAL_COMMS.readBytes((char*) &cmd_id, 1);
 
-    //call the correct handler
-    serial_cmd_handlers[cmd_id]();
+      #ifdef DEBUG
+      Serial.print("cmd_id: ");
+      Serial.println(cmd_id);
+      #endif
+
+      //call the correct handler
+      serial_cmd_handlers[cmd_id]();
+    }
   }
 }
 
@@ -220,7 +228,7 @@ void get_speed_cmd_hanlder()
   reply_get_speed.servo_id = servo_id;
   reply_get_speed.speed = speed;
 
-  SERIAL_COMMS.write((uint8_t*) &reply_get_speed, sizeof(replystruct_get_speed));
+  sendData((uint8_t*) &reply_get_speed, sizeof(replystruct_get_speed));
 }
 
 void get_position_cmd_hanlder()
@@ -239,7 +247,7 @@ void get_position_cmd_hanlder()
   reply_get_position.servo_id = servo_id;
   reply_get_position.position = (int16_t)((position - SERVO_MAX_COMD/2) * 36000 / SERVO_MAX_COMD);;
 
-  SERIAL_COMMS.write((uint8_t*) &reply_get_position, sizeof(replystruct_get_position));
+  sendData((uint8_t*) &reply_get_position, sizeof(replystruct_get_position));
 }
 
 void get_load_cmd_hanlder()
@@ -258,7 +266,7 @@ void get_load_cmd_hanlder()
   reply_get_load.servo_id = servo_id;
   reply_get_load.load = load;
 
-  SERIAL_COMMS.write((uint8_t*) &reply_get_load, sizeof(reply_get_load));
+  sendData((uint8_t*) &reply_get_load, sizeof(reply_get_load));
 }
 
 void get_supply_volt_cmd_hanlder()
@@ -277,7 +285,7 @@ void get_supply_volt_cmd_hanlder()
   reply_get_volt.servo_id = servo_id;
   reply_get_volt.volt = volt;
 
-  SERIAL_COMMS.write((uint8_t*) &reply_get_volt, sizeof(replystruct_get_supply_volt));
+  sendData((uint8_t*) &reply_get_volt, sizeof(replystruct_get_supply_volt));
 }
 
 void get_temp_cmd_hanlder()
@@ -296,7 +304,7 @@ void get_temp_cmd_hanlder()
   reply_get_temp.servo_id = servo_id;
   reply_get_temp.temp = temp;
 
-  SERIAL_COMMS.write((uint8_t*) &reply_get_temp, sizeof(replystruct_get_temp));
+  sendData((uint8_t*) &reply_get_temp, sizeof(replystruct_get_temp));
 }
 
 void get_isMoving_cmd_hanlder()
@@ -315,7 +323,7 @@ void get_isMoving_cmd_hanlder()
   reply_get_isMoving.servo_id = servo_id;
   reply_get_isMoving.isMoving = isMoving;
 
-  SERIAL_COMMS.write((uint8_t*) &reply_get_isMoving, sizeof(replystruct_get_isMoving));
+  sendData((uint8_t*) &reply_get_isMoving, sizeof(replystruct_get_isMoving));
 }
 
 void get_all_cmd_hanlder(){
@@ -359,7 +367,7 @@ void get_all_cmd_hanlder(){
   reply_get_all.temp = temp;
   reply_get_all.isMoving = isMoving;
 
-  SERIAL_COMMS.write((uint8_t*) &reply_get_all, sizeof(replystruct_get_all));
+  sendData((uint8_t*) &reply_get_all, sizeof(replystruct_get_all));
 }
 
 void set_position_async_cmd_hanlder()
@@ -446,6 +454,13 @@ void set_motor_speed_cmd_hanlder()
   {
     ESC2.writeMicroseconds(pwm);
   }
+}
+
+
+void sendData(uint8_t* data, size_t length) {
+    SERIAL_COMMS.write(0xFF);
+    SERIAL_COMMS.write(0xFF);
+    SERIAL_COMMS.write(data, length);
 }
 
 
