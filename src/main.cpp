@@ -53,6 +53,9 @@ enum motor_selectors {
 Servo ESC1;     // create servo object to control the ESC1
 Servo ESC2;     // create servo object to control the ESC2
 
+#ifdef DEBUG
+unsigned long last_time = millis();
+#endif
 
 void setup() {
 digitalWrite(LED_BUILTIN, HIGH);
@@ -76,9 +79,22 @@ digitalWrite(LED_BUILTIN, HIGH);
 
 void loop()
 {
+  //measure time between received messages
+
+
   //read serial message if available
   if (SERIAL_COMMS.available() > 0)
   {
+    #ifdef DEBUG
+    unsigned long current_time = millis();
+
+    unsigned long time_since_last_message = current_time - last_time;
+    Serial.print("time since last message: ");
+    Serial.println(time_since_last_message);
+
+    last_time = current_time;
+    #endif
+
     //check if there is an end marker in the data
     #ifdef DEBUG
     Serial.println("received message");
