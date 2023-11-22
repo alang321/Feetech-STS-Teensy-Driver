@@ -67,7 +67,7 @@ digitalWrite(LED_BUILTIN, HIGH);
   Serial.begin(9600);
   Serial.println("Starting Teensy");
 #endif
-  SERIAL_COMMS.begin(115200);
+  SERIAL_COMMS.begin(230400);
 
   //initialize the motor pins
   ESC1.attach(MOTOR1_PWM_PIN,1000,2000); // (pin, min pulse width, max pulse width in microseconds) 
@@ -381,7 +381,11 @@ void set_motor_speed_cmd_hanlder()
 {
   // Read the command struct from the serial buffer to the correct struct
   cmdstruct_set_motor_speed cmd_set_motor_speed;
-  SERIAL_COMMS.readBytes((char*) &cmd_set_motor_speed, sizeof(cmd_set_motor_speed));
+  byte serial_buffer[sizeof(cmd_set_motor_speed) - 1];
+  SERIAL_COMMS.readBytes((char*) &serial_buffer, sizeof(cmd_set_motor_speed) - 1);
+
+  cmd_set_motor_speed.motor_id = serial_buffer[0];
+  cmd_set_motor_speed.pwm = (serial_buffer[2] << 8) | serial_buffer[1];
 
   //retrieve data from command struct
   int motor_id = cmd_set_motor_speed.motor_id;
