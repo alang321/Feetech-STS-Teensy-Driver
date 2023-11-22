@@ -4,15 +4,20 @@
 #include "cmd_handlers.h"
 #include <Servo.h>
 
+//config
 #define DEBUG
 #define SERIAL_COMMS Serial4
+#define SERIAL_COMMS_BAUDRATE 230400
+#define DEFAULT_SERIAL_PORT_SERVOS 1
+#define SERIAL_SERVOS_BAUDRATE 1000000
+#define INIT_SERVOS_ON_STARTUP true
 
 #define MOTOR1_PWM_PIN 18
 #define MOTOR2_PWM_PIN 19
 
 #define MOTOR_INITIAL_PWM 1000
 
-
+//weird servo stuff
 #define SERVO_MAX_COMD 4096
 
 STSServoDriver servos;
@@ -67,13 +72,16 @@ digitalWrite(LED_BUILTIN, HIGH);
   Serial.begin(9600);
   Serial.println("Starting Teensy");
 #endif
-  SERIAL_COMMS.begin(230400);
+  SERIAL_COMMS.begin(SERIAL_COMMS_BAUDRATE);
 
   //initialize the motor pins
   ESC1.attach(MOTOR1_PWM_PIN,1000,2000); // (pin, min pulse width, max pulse width in microseconds) 
   ESC2.attach(MOTOR2_PWM_PIN,1000,2000); // (pin, min pulse width, max pulse width in microseconds)
   ESC1.writeMicroseconds(MOTOR_INITIAL_PWM);
   ESC2.writeMicroseconds(MOTOR_INITIAL_PWM);
+
+  if(INIT_SERVOS_ON_STARTUP)
+      servos.init(DEFAULT_SERIAL_PORT_SERVOS, SERIAL_SERVOS_BAUDRATE, false);
 }
 
 
@@ -126,7 +134,7 @@ void set_serial_id_cmd_hanlder()
   #endif
 
   // initialize the servo
-  servos.init(cmd_set_serial_id.serialPort_id, 1000000, false);
+  servos.init(cmd_set_serial_id.serialPort_id, SERIAL_SERVOS_BAUDRATE, false);
 }
 
 void enable_servo_cmd_hanlder()
