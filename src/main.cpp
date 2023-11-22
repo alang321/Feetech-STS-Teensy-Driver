@@ -29,24 +29,26 @@ enum cmd_identifier {
   set_position = 3,
   get_speed = 4,
   get_position = 5,
-  get_volt = 6,
-  get_temp = 7,
-  get_isMoving = 8,
-  get_all = 9,
-  set_mode = 10,
-  set_position_async = 11,
-  set_speed_async = 12,
-  trigger_action = 13,
-  set_motor_speed = 14
+  get_load = 6,
+  get_supply_volt = 7,
+  get_temp = 8,
+  get_isMoving = 9,
+  get_all = 10,
+  set_mode = 11,
+  set_position_async = 12,
+  set_speed_async = 13,
+  trigger_action = 14,
+  set_motor_speed = 15
 };
 
 enum reply_identifier {
   reply_get_speed_id = 0,
   reply_get_position_id = 1,
-  reply_get_volt_id = 2,
-  reply_get_temp_id = 3,
-  reply_get_isMoving_id = 4,
-  reply_get_all_id = 5
+  reply_get_load_id = 2,
+  reply_get_supply_volt_id = 3,
+  reply_get_temp_id = 4,
+  reply_get_isMoving_id = 5,
+  reply_get_all_id = 6
 };
 
 enum motor_selectors {
@@ -240,7 +242,7 @@ void get_position_cmd_hanlder()
   SERIAL_COMMS.write((uint8_t*) &reply_get_position, sizeof(replystruct_get_position));
 }
 
-void get_volt_cmd_hanlder()
+void get_load_cmd_hanlder()
 {
   // Read the command struct from the serial buffer to the correct struct
   cmdstruct_get_volt cmd_get_volt;
@@ -248,15 +250,34 @@ void get_volt_cmd_hanlder()
 
   //retrieve data from command struct
   int servo_id = cmd_get_volt.servo_id;
-  int volt = servos.getCurrentDriveVoltage(servo_id);
+  int load = servos.getCurrentLoad(servo_id);
 
   //send reply
-  replystruct_get_volt reply_get_volt;
-  reply_get_volt.identifier = reply_get_volt_id;
+  replystruct_get_load reply_get_load;
+  reply_get_load.identifier = reply_get_load_id;
+  reply_get_load.servo_id = servo_id;
+  reply_get_load.load = load;
+
+  SERIAL_COMMS.write((uint8_t*) &reply_get_load, sizeof(reply_get_load));
+}
+
+void get_supply_volt_cmd_hanlder()
+{
+  // Read the command struct from the serial buffer to the correct struct
+  cmdstruct_get_volt cmd_get_volt;
+  SERIAL_COMMS.readBytes((char*) &cmd_get_volt, sizeof(cmd_get_volt));
+
+  //retrieve data from command struct
+  int servo_id = cmd_get_volt.servo_id;
+  int volt = servos.getCurrentSupplyVoltage(servo_id);
+
+  //send reply
+  replystruct_get_supply_volt reply_get_volt;
+  reply_get_volt.identifier = reply_get_supply_volt_id;
   reply_get_volt.servo_id = servo_id;
   reply_get_volt.volt = volt;
 
-  SERIAL_COMMS.write((uint8_t*) &reply_get_volt, sizeof(replystruct_get_volt));
+  SERIAL_COMMS.write((uint8_t*) &reply_get_volt, sizeof(replystruct_get_supply_volt));
 }
 
 void get_temp_cmd_hanlder()
@@ -311,7 +332,7 @@ void get_all_cmd_hanlder(){
   uint8_t servo_id = cmd_get_all.servo_id;
   int16_t position = servos.getCurrentPosition(servo_id);
   int16_t speed = servos.getCurrentSpeed(servo_id);
-  int8_t volt = servos.getCurrentDriveVoltage(servo_id);
+  int8_t load = servos.getCurrentLoad(servo_id);
   int8_t temp = servos.getCurrentTemperature(servo_id);
   bool isMoving = servos.isMoving(servo_id);
 
@@ -320,8 +341,8 @@ void get_all_cmd_hanlder(){
   Serial.println(position);
   Serial.print("speed: ");
   Serial.println(speed);
-  Serial.print("volt: ");
-  Serial.println(volt);
+  Serial.print("load: ");
+  Serial.println(load);
   Serial.print("temp: ");
   Serial.println(temp);
   Serial.print("isMoving: ");
@@ -334,7 +355,7 @@ void get_all_cmd_hanlder(){
   reply_get_all.servo_id = servo_id;
   reply_get_all.position = position;
   reply_get_all.speed = speed;
-  reply_get_all.volt = volt;
+  reply_get_all.load = load;
   reply_get_all.temp = temp;
   reply_get_all.isMoving = isMoving;
 

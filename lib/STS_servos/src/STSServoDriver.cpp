@@ -95,16 +95,33 @@ bool STSServoDriver::setId(byte const& oldServoId, byte const& newServoId)
     return ping(newServoId);
 }
 
-int STSServoDriver::getCurrentDriveVoltage(byte const& servoId)
+int STSServoDriver::getCurrentLoad(byte const& servoId)
 {
-    int16_t drive_voltage = readTwoBytesRegister(servoId, STSRegisters::CURRENT_POSITION);
+    int16_t drive_voltage = readTwoBytesRegister(servoId, STSRegisters::CURRENT_DRIVE_VOLTAGE);
+
+    if((drive_voltage&(1<<10))){
+		drive_voltage = -(drive_voltage&~(1<<10));
+	}
+
     return drive_voltage;
+}
+
+int STSServoDriver::getCurrentSupplyVoltage(byte const& servoId)
+{
+    int8_t supply_voltage = readRegister(servoId, STSRegisters::CURRENT_VOLTAGE);
+    return supply_voltage;
 }
 
 
 int STSServoDriver::getCurrentPosition(byte const& servoId)
 {
     int16_t pos = readTwoBytesRegister(servoId, STSRegisters::CURRENT_POSITION);
+
+
+	if((pos&(1<<15))){
+		pos = -(pos&~(1<<15));
+	}
+
     return pos;
 }
 
@@ -112,13 +129,18 @@ int STSServoDriver::getCurrentPosition(byte const& servoId)
 int STSServoDriver::getCurrentSpeed(byte const& servoId)
 {
     int16_t vel = readTwoBytesRegister(servoId, STSRegisters::CURRENT_SPEED);
+
+    if((vel&(1<<15))){
+		vel = -(vel&~(1<<15));
+	}	
+
     return vel;
 }
 
 
 int STSServoDriver::getCurrentTemperature(byte const& servoId)
 {
-    return readTwoBytesRegister(servoId, STSRegisters::CURRENT_TEMPERATURE);
+    return readRegister(servoId, STSRegisters::CURRENT_TEMPERATURE);
 }
 
 
