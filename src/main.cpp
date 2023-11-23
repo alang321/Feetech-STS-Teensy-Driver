@@ -91,17 +91,24 @@ digitalWrite(LED_BUILTIN, HIGH);
 
 void loop()
 {
-  //read the first byte in the serial buffer
-  byte first_byte = SERIAL_COMMS.read();
-
-  //check if it is the start marker
-  if (first_byte == 0xFF)
+  if(SERIAL_COMMS.available() > 0)
   {
-    //read the second byte in the serial buffer
-    byte second_byte = SERIAL_COMMS.read();
+    //read the first 2 bytes in the serial buffer
+    byte first_byte;
+    SERIAL_COMMS.readBytes((char*) &first_byte, 1);
 
-    //check if it is the start marker
-    if (second_byte == 0xFF)
+    if(first_byte != 0xBF)
+      return;
+
+    byte second_byte;
+    SERIAL_COMMS.readBytes((char*) &second_byte, 1);
+
+    
+    #ifdef DEBUG
+    Serial.print("found start bytes: ");
+    #endif
+
+    if(second_byte == 0xFF)
     {
       #ifdef DEBUG
       unsigned long current_time = millis();
@@ -111,6 +118,7 @@ void loop()
       Serial.println(time_since_last_message);
 
       last_time = current_time;
+
       #endif
 
       #ifdef DEBUG
@@ -152,7 +160,15 @@ void enable_servo_cmd_hanlder()
   // Read the command struct from the serial buffer to the correct struct
   cmdstruct_enable_servo cmd_enable_servo;
   SERIAL_COMMS.readBytes((char*) &cmd_enable_servo, sizeof(cmd_enable_servo));
-  // todo: implement
+
+  #ifdef DEBUG
+  Serial.print("cmd_enable_servo.servo_id: ");
+  Serial.println(cmd_enable_servo.servo_id);
+  Serial.print("cmd_enable_servo.enable: ");
+  Serial.println(cmd_enable_servo.enable);
+  #endif
+
+  servos.enableTorque(cmd_enable_servo.servo_id, cmd_enable_servo.enable);
 }
 
 void set_speed_cmd_hanlder()
@@ -429,7 +445,14 @@ void set_mode_cmd_hanlder()
   cmdstruct_set_mode cmd_set_mode;
   SERIAL_COMMS.readBytes((char*) &cmd_set_mode, sizeof(cmd_set_mode));
 
-  //todo implement
+  #ifdef DEBUG
+  Serial.print("cmd_set_mode.servo_id: ");
+  Serial.println(cmd_set_mode.servo_id);
+  Serial.print("cmd_set_mode.mode: ");
+  Serial.println(cmd_set_mode.mode);
+  #endif
+
+  servos.setMode(cmd_set_mode.servo_id, cmd_set_mode.mode);
 }
 
 void set_motor_speed_cmd_hanlder()
@@ -458,7 +481,7 @@ void set_motor_speed_cmd_hanlder()
 
 
 void sendData(uint8_t* data, size_t length) {
-    SERIAL_COMMS.write(0xFF);
+    SERIAL_COMMS.write(0xBF);
     SERIAL_COMMS.write(0xFF);
     SERIAL_COMMS.write(data, length);
 }

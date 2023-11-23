@@ -168,6 +168,15 @@ bool STSServoDriver::setTargetVelocity(byte const& servoId, int const& velocity,
     return writeTwoBytesRegister(servoId, STSRegisters::RUNNING_SPEED, velocity, asynchronous);
 }
 
+bool STSServoDriver::enableTorque(byte const& servoId, bool const& enable)
+{
+    return writeRegister(servoId, STSRegisters::TORQUE_SWITCH, enable ? 1 : 0);
+}
+
+bool STSServoDriver::setMode(byte const& servoId, uint8_t const& mode)
+{
+    return writeRegister(servoId, STSRegisters::OPERATION_MODE, mode);
+}
 
 bool STSServoDriver::trigerAction()
 {

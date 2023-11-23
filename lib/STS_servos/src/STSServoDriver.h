@@ -124,6 +124,11 @@ class STSServoDriver
         /// \return True if moving, false otherwise.
         bool isMoving(byte const& servoId);
 
+        /// \brief enable Torque
+        bool enableTorque(byte const& servoId, bool const& enable);
+
+        bool setMode(byte const& servoId, uint8_t const& mode);
+
         /// \brief Set target servo position.
         /// \note This function assumes that the amplification factor ANGULAR_RESOLUTION is set to 1.
         /// \param[in] servoId ID of the servo
