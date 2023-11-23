@@ -27,6 +27,7 @@ bool STSServoDriver::init(int serial_id, long const& baudRate, bool doPing)
     // get the serial port by the passed id
     port_ = serialPorts[serial_id];
     port_->begin(baudRate);
+    port_->setTimeout(1);
 
     s_pkuart_ = pkuarts[serial_id];
 
