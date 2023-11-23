@@ -5,9 +5,9 @@
 #include <Servo.h>
 
 //config
-#define DEBUG
+//#define DEBUG
 #define SERIAL_COMMS Serial2
-#define SERIAL_COMMS_BAUDRATE 230400
+#define SERIAL_COMMS_BAUDRATE 576000
 #define DEFAULT_SERIAL_PORT_SERVOS 4
 #define SERIAL_SERVOS_BAUDRATE 1000000
 #define INIT_SERVOS_ON_STARTUP true
