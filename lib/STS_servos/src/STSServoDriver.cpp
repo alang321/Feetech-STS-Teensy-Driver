@@ -150,6 +150,58 @@ int STSServoDriver::getCurrentCurrent(byte const& servoId)
     return current * 0.0065;
 }
 
+STSServoDriver::all_feedback STSServoDriver::getAll(byte const& servoId)
+{
+    //return struct
+    all_feedback feedback;
+
+    //this ugliness was stolen and written out of pure frustration, it actually works, does not match the other fucntion tho, but the others are wrong
+    byte buffer_servo[8];
+    
+	readRegisters(servoId, STSRegisters::CURRENT_POSITION, 8, buffer_servo);
+	
+    int shift = -5;
+    
+    //Position
+    feedback.position = (int16_t)(CompactBytes(buffer_servo[6 + shift], buffer_servo[5 + shift]));
+
+    //Speed
+    int sign = bitRead(buffer_servo[8 + shift], 7);
+    bitClear(buffer_servo[8 + shift], 7);
+    feedback.speed = (int16_t)((CompactBytes(buffer_servo[8 + shift], buffer_servo[7 + shift])));
+    if (sign) {
+        feedback.speed *= -1;
+    }
+
+    //Load
+    sign = bitRead(buffer_servo[10 + shift], 2);
+    bitClear(buffer_servo[10 + shift], 2);
+    feedback.load = (int16_t)((CompactBytes(buffer_servo[10 + shift], buffer_servo[9 + shift])));
+    if (sign) {
+        feedback.load *= -1;
+    }
+
+    //Voltage
+    feedback.voltage = (int16_t)(buffer_servo[11 + shift]);
+
+    //Temperature
+    feedback.temperature = (int16_t)(buffer_servo[12 + shift]);  
+
+    port_->flush();
+
+
+    return feedback;   
+}
+
+uint16_t STSServoDriver::CompactBytes(uint8_t DataL, uint8_t DataH) {
+  uint16_t Data;
+  Data = DataL;
+  Data <<= 8;
+  Data |= DataH;
+  return Data;
+}
+
+
 bool STSServoDriver::isMoving(byte const& servoId)
 {
     byte const result = readRegister(servoId, STSRegisters::MOVING_STATUS);

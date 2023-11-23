@@ -352,36 +352,32 @@ void get_all_cmd_hanlder(){
   Serial.println(cmd_get_all.servo_id);
   #endif
 
-  //retrieve data from command struct
-  uint8_t servo_id = cmd_get_all.servo_id;
-  int16_t position = servos.getCurrentPosition(servo_id);
-  int16_t speed = servos.getCurrentSpeed(servo_id);
-  int8_t load = servos.getCurrentLoad(servo_id);
-  int8_t temp = servos.getCurrentTemperature(servo_id);
-  bool isMoving = servos.isMoving(servo_id);
+  //retrieve data
+  STSServoDriver::all_feedback feedback = servos.getAll(cmd_get_all.servo_id);
+
 
   #ifdef DEBUG
   Serial.print("position: ");
-  Serial.println(position);
+  Serial.println(feedback.position);
   Serial.print("speed: ");
-  Serial.println(speed);
+  Serial.println(feedback.speed);
   Serial.print("load: ");
-  Serial.println(load);
+  Serial.println(feedback.load);
   Serial.print("temp: ");
-  Serial.println(temp);
-  Serial.print("isMoving: ");
-  Serial.println(isMoving);
+  Serial.println(feedback.temperature);
+  Serial.print("Voltage: ");
+  Serial.println(feedback.voltage);
   #endif
 
   //send reply
   replystruct_get_all reply_get_all;
   reply_get_all.identifier = reply_get_all_id;
-  reply_get_all.servo_id = servo_id;
-  reply_get_all.position = position;
-  reply_get_all.speed = speed;
-  reply_get_all.load = load;
-  reply_get_all.temp = temp;
-  reply_get_all.isMoving = isMoving;
+  reply_get_all.servo_id = cmd_get_all.servo_id;
+  reply_get_all.position = feedback.position;
+  reply_get_all.speed = feedback.speed;
+  reply_get_all.load = feedback.load;
+  reply_get_all.temp = feedback.temperature;
+  reply_get_all.supply_volt = feedback.voltage;
 
   sendData((uint8_t*) &reply_get_all, sizeof(replystruct_get_all));
 }

@@ -70,6 +70,15 @@ class STSServoDriver
         /// \brief Contstructor.
         STSServoDriver();
 
+        
+        struct all_feedback {
+            int position;
+            int speed;
+            int load;
+            int voltage;
+            int temperature;
+        };
+
         /// \brief Initialize the servo driver.
         ///
         /// \param serialPort Serial port, default is Serial
@@ -106,6 +115,7 @@ class STSServoDriver
         /// \return Temperature, in degC. 0 on failure.
         int getCurrentTemperature(byte const& servoId);
 
+
         /// \brief Get current servo current.
         /// \param[in] servoId ID of the servo
         /// \return Current, in A.
@@ -118,6 +128,8 @@ class STSServoDriver
         /// \brief Get current supply voltage.
         /// \param[in] servoId ID of the servo
         int getCurrentSupplyVoltage(byte const& servoId);
+
+        all_feedback getAll(byte const& servoId);
 
         /// \brief Check if the servo is moving
         /// \param[in] servoId ID of the servo
@@ -184,6 +196,12 @@ class STSServoDriver
         int16_t readTwoBytesRegister(byte const& servoId, byte const& registerId);
 
     private:
+
+    
+        /// @brief Combine bytes helper function
+        uint16_t CompactBytes(uint8_t DataL, uint8_t DataH);
+
+        
 
         /// \brief Clear internal device error.
         // void clearError();
