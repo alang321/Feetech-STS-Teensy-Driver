@@ -1,4 +1,4 @@
-# Teensy Driver for Feetech Servo Control for Teensy
+# Teensy Driver for Feetech STS Servo Control
 
 This repository contains a driver for the Feetech STS Servos dpecifically designed to run on the Teensy 4.0. It uses its hardware features for the single wire serial communication so no additional Multiplexer or similar is required. The implementation for this is taken from [Teensy_actuators_PPZ](https://github.com/tudelft/Teensy_actuators_PPZ/tree/main). 
 
