@@ -202,6 +202,11 @@ uint16_t STSServoDriver::CompactBytes(uint8_t DataL, uint8_t DataH) {
   return Data;
 }
 
+bool STSServoDriver::setZeroPosition(byte const& servoId)
+{
+    return writeRegister(servoId, STSRegisters::TORQUE_SWITCH, 128);
+}
+
 
 bool STSServoDriver::isMoving(byte const& servoId)
 {

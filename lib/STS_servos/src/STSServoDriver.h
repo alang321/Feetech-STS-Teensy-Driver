@@ -139,6 +139,10 @@ class STSServoDriver
         /// \brief enable Torque
         bool enableTorque(byte const& servoId, bool const& enable);
 
+        /// \brief Sets the servo zero position to the current position
+        bool setZeroPosition(byte const& servoId);
+
+        /// \brief Set the servo mode. 1 for wheel mode, 0 for position mode.
         bool setMode(byte const& servoId, uint8_t const& mode);
 
         /// \brief Set target servo position.

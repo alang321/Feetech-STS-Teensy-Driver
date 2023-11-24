@@ -40,7 +40,8 @@ enum cmd_identifier {
   set_position_async = 12,
   set_speed_async = 13,
   trigger_action = 14,
-  set_motor_speed = 15
+  set_motor_speed = 15,
+  set_zero_position = 16
 };
 
 enum reply_identifier {
@@ -473,6 +474,20 @@ void set_motor_speed_cmd_hanlder()
   {
     ESC2.writeMicroseconds(pwm);
   }
+}
+
+void set_zero_position_cmd_hanlder()
+{
+  // Read the command struct from the serial buffer to the correct struct
+  cmdstruct_set_zero_position cmd_set_zero_position;
+  SERIAL_COMMS.readBytes((char*) &cmd_set_zero_position, sizeof(cmd_set_zero_position));
+
+  #ifdef DEBUG
+  Serial.print("cmd_set_zero_position.servo_id: ");
+  Serial.println(cmd_set_zero_position.servo_id);
+  #endif
+
+  servos.setZeroPosition(cmd_set_zero_position.servo_id);
 }
 
 
