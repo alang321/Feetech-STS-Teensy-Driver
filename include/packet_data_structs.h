@@ -41,7 +41,7 @@ int cmd_lengths[] = {
   sizeof(cmdstruct_set_mode),
   sizeof(cmdstruct_set_position),
   sizeof(cmdstruct_set_speed),
-  sizeof(comdstruct_trigger_action),
+  0, //for some reason an empty struct is 1 byte, but this has to be 0 since its the trigger action command, which has no data
   sizeof(cmdstruct_set_motor_speed),
   sizeof(cmdstruct_set_zero_position)
 };

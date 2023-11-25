@@ -46,40 +46,39 @@ bool receiveValidPacket(){
                     depth = 0;
                 }
                 break;
-        default:
-            depth++;
-            
+            default:
+                depth++;
+                
+                //read the next byte into the buffer
+                buffer[depth - 4] = next_byte;
 
-            //read the next byte into the buffer
-            buffer[depth - 2] = next_byte;
-
-            //check if we are reached the end of the data/checksum section of the packet
-            if(depth == inbound_pkt.get_total_length()){
-                //set the data and checksum in the inbound packet, if the checksum is invalid then abort the packet read
-                if(inbound_pkt.set_data_and_checksum(buffer)){
-                    //call the correct handler
-                    serial_cmd_handlers[inbound_pkt.get_cmd_id()](inbound_pkt.get_data());
-                }else{
-                    #ifdef DEBUG
-                    Serial.println("Invalid checksum, aborting packet read.");
-                    #endif
+                //check if we are reached the end of the data/checksum section of the packet
+                if(depth == inbound_pkt.get_total_length()){
+                    //set the data and checksum in the inbound packet, if the checksum is invalid then abort the packet read
+                    if(inbound_pkt.set_data_and_checksum(buffer)){
+                        //call the correct handler
+                        serial_cmd_handlers[inbound_pkt.get_cmd_id()](inbound_pkt.get_data());
+                    }else{
+                        #ifdef DEBUG
+                        Serial.println("Invalid checksum, aborting packet read.");
+                        #endif
+                    }
+                    depth = 0;
                 }
-                depth = 0;
-            }
-            else{
-                //check if there is a start sequence in the data, if there is then abort the packet read
-                //dont check the checksum if the nextbyte is the checksum byte
-                //because here there might be an unintended start sequence in the data, exteremely unlikely but possible if the checksum is 0xFF
-                if(next_byte == inbound_packet::startByte2 && last_received_byte == inbound_packet::startByte1 && depth != inbound_pkt.get_total_length()){
+                else{
+                    //check if there is a start sequence in the data, if there is then abort the packet read
                     //dont check the checksum if the nextbyte is the checksum byte
-                    depth = 2;
-                    #ifdef DEBUG
-                    Serial.println("Unexpected/early start sequence found in data, aborting packet read.");
-                    #endif
-                    break;
+                    //because here there might be an unintended start sequence in the data, exteremely unlikely but possible if the checksum is 0xFF
+                    if(next_byte == inbound_packet::startByte2 && last_received_byte == inbound_packet::startByte1 && depth != inbound_pkt.get_total_length()){
+                        //dont check the checksum if the nextbyte is the checksum byte
+                        depth = 2;
+                        #ifdef DEBUG
+                        Serial.println("Unexpected/early start sequence found in data, aborting packet read.");
+                        #endif
+                        break;
+                    }
                 }
-            }
-            break;
+                break;
         }   
 
         last_received_byte = next_byte;
@@ -109,7 +108,7 @@ uint8_t outbound_packet::get_buffer_length() {
 }
 
 uint8_t outbound_packet::calculate_checksum() {
-        uint16_t sum = 0;
+    uint16_t sum = 0;
 
     for (size_t i = 0; i < data_length; ++i) {
         sum += data[i];
@@ -131,6 +130,8 @@ bool inbound_packet::set_cmd_id(uint8_t cmd_id) {
 uint8_t inbound_packet::calculate_checksum() {
     uint16_t sum = 0;
 
+    sum += cmd_id;
+
     for (size_t i = 0; i < get_data_length(); ++i) {
         sum += data[i];
     }
@@ -148,6 +149,14 @@ bool inbound_packet::set_data_and_checksum(uint8_t* data_and_checksum) {
     if(received_checksum == calculate_checksum()){
         //free the old data
         delete[] data;
+
+        //check if the data length is 0, if it is then set the data to nullptr
+        //maybe this is not needed, but I dont wanna test
+        if(get_data_length() == 0){
+            data = nullptr;
+            return true;
+        }
+
         //copy the data
         data = new uint8_t[get_data_length()];
         memcpy(data, data_and_checksum, get_data_length());

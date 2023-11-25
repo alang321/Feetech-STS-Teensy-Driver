@@ -1,12 +1,11 @@
 
 
 fix feedback
-add the other sts library, just way better
+add the other sts library, just better?
 
 make python datastructs
 
-rework the async setting
-make the async writing for every command, without explicit commands with a -1 servo id or smth
+what is the id = -1 in the other library_
 
 
 
