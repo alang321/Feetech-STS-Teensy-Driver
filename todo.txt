@@ -1,11 +1,8 @@
 
 
 fix feedback
-add the other sts library, just better?
 
 make python datastructs
-
-what is the id = -1 in the other library_
 
 
 
