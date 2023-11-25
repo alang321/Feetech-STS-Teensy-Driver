@@ -2,12 +2,10 @@
 
 fix feedback
 add the other sts library, just way better
-redo the checksum crc8
 
-fix all the command handlers
+make python datastructs
 
-add an equal sign for the struct packing in python =
-
+rework the async setting
 make the async writing for every command, without explicit commands with a -1 servo id or smth
 
 

@@ -7,7 +7,7 @@
 
 
 
-void set_serial_id_cmd_handler(byte* buffer)
+void set_serial_id_cmd_handler(uint8_t* buffer)
 {
   // Read the command struct from the buffer to the correct struct
   cmdstruct_set_serial_id cmd_set_serial_id;
@@ -22,7 +22,7 @@ void set_serial_id_cmd_handler(byte* buffer)
   servos.init(cmd_set_serial_id.serialPort_id, SERIAL_SERVOS_BAUDRATE, false);
 }
 
-void enable_servo_cmd_handler(byte* buffer)
+void enable_servo_cmd_handler(uint8_t* buffer)
 {
   // Read the command struct from the buffer to the correct struct
   cmdstruct_enable_servo cmd_enable_servo;
@@ -38,7 +38,7 @@ void enable_servo_cmd_handler(byte* buffer)
   servos.enableTorque(cmd_enable_servo.servo_id, cmd_enable_servo.enable);
 }
 
-void set_speed_cmd_handler(byte* buffer)
+void set_speed_cmd_handler(uint8_t* buffer)
 {
   // Read the command struct from the buffer to the correct struct
   cmdstruct_set_speed cmd_set_speed;
@@ -57,7 +57,7 @@ void set_speed_cmd_handler(byte* buffer)
   servos.setTargetVelocity(servo_id, speed);
 }
 
-void set_position_cmd_handler(byte* buffer)
+void set_position_cmd_handler(uint8_t* buffer)
 {
   // Read the command struct from the buffer to the correct struct
   cmdstruct_set_position cmd_set_position;
@@ -76,7 +76,7 @@ void set_position_cmd_handler(byte* buffer)
   servos.setTargetPosition(servo_id, position);
 }
 
-void get_speed_cmd_handler(byte* buffer)
+void get_speed_cmd_handler(uint8_t* buffer)
 {
   // Read the command struct from the buffer to the correct struct
   cmdstruct_get_speed cmd_get_speed;
@@ -99,7 +99,7 @@ void get_speed_cmd_handler(byte* buffer)
   sendData((uint8_t*) &reply_get_speed, sizeof(replystruct_get_speed));
 }
 
-void get_position_cmd_handler(byte* buffer)
+void get_position_cmd_handler(uint8_t* buffer)
 {
   // Read the command struct from the serial buffer to the correct struct
   cmdstruct_get_position cmd_get_position;
@@ -117,7 +117,7 @@ void get_position_cmd_handler(byte* buffer)
   sendData((uint8_t*) &reply_get_position, sizeof(replystruct_get_position));
 }
 
-void get_load_cmd_handler(byte* buffer)
+void get_load_cmd_handler(uint8_t* buffer)
 {
   // Read the command struct from the serial buffer to the correct struct
   cmdstruct_get_load cmd_get_load;
@@ -135,7 +135,7 @@ void get_load_cmd_handler(byte* buffer)
   sendData((uint8_t*) &reply_get_load, sizeof(reply_get_load));
 }
 
-void get_supply_volt_cmd_handler(byte* buffer)
+void get_supply_volt_cmd_handler(uint8_t* buffer)
 {
   // Read the command struct from the serial buffer to the correct struct
   cmdstruct_get_volt cmd_get_volt;
@@ -153,7 +153,7 @@ void get_supply_volt_cmd_handler(byte* buffer)
   sendData((uint8_t*) &reply_get_volt, sizeof(replystruct_get_supply_volt));
 }
 
-void get_temp_cmd_handler(byte* buffer)
+void get_temp_cmd_handler(uint8_t* buffer)
 {
   // Read the command struct from the serial buffer to the correct struct
   cmdstruct_get_temp cmd_get_temp;
@@ -171,7 +171,7 @@ void get_temp_cmd_handler(byte* buffer)
   sendData((uint8_t*) &reply_get_temp, sizeof(replystruct_get_temp));
 }
 
-void get_isMoving_cmd_handler(byte* buffer)
+void get_isMoving_cmd_handler(uint8_t* buffer)
 {
   // Read the command struct from the serial buffer to the correct struct
   cmdstruct_get_isMoving cmd_get_isMoving;
@@ -189,7 +189,7 @@ void get_isMoving_cmd_handler(byte* buffer)
   sendData((uint8_t*) &reply_get_isMoving, sizeof(replystruct_get_isMoving));
 }
 
-void get_all_cmd_handler(byte* buffer){
+void get_all_cmd_handler(uint8_t* buffer){
   // Read the command struct from the serial buffer to the correct struct
   cmdstruct_get_all cmd_get_all;
   memcpy(&cmd_get_all, buffer, sizeof(cmd_get_all));
@@ -228,7 +228,7 @@ void get_all_cmd_handler(byte* buffer){
   sendData((uint8_t*) &reply_get_all, sizeof(replystruct_get_all));
 }
 
-void set_position_async_cmd_handler(byte* buffer)
+void set_position_async_cmd_handler(uint8_t* buffer)
 {
   // Read the command struct from the serial buffer to the correct struct
   cmdstruct_set_position cmd_set_position_async;
@@ -248,7 +248,7 @@ void set_position_async_cmd_handler(byte* buffer)
   servos.setTargetPosition(servo_id, position, true);
 }
 
-void set_speed_async_cmd_handler(byte* buffer)
+void set_speed_async_cmd_handler(uint8_t* buffer)
 {
   // Read the command struct from the serial buffer to the correct struct
   cmdstruct_set_speed cmd_set_speed_async;
@@ -268,12 +268,12 @@ void set_speed_async_cmd_handler(byte* buffer)
   servos.setTargetVelocity(servo_id, speed, true);
 }
 
-void trigger_action_cmd_handler(byte* buffer)
+void trigger_action_cmd_handler(uint8_t* buffer)
 {
   servos.trigerAction();
 }
 
-void set_mode_cmd_handler(byte* buffer)
+void set_mode_cmd_handler(uint8_t* buffer)
 {
   // Read the command struct from the serial buffer to the correct struct
   cmdstruct_set_mode cmd_set_mode;
@@ -289,7 +289,7 @@ void set_mode_cmd_handler(byte* buffer)
   servos.setMode(cmd_set_mode.servo_id, cmd_set_mode.mode);
 }
 
-void set_motor_speed_cmd_handler(byte* buffer)
+void set_motor_speed_cmd_handler(uint8_t* buffer)
 {
   // Read the command struct from the serial buffer to the correct struct
   cmdstruct_set_motor_speed cmd_set_motor_speed;
@@ -309,7 +309,7 @@ void set_motor_speed_cmd_handler(byte* buffer)
   }
 }
 
-void set_zero_position_cmd_handler(byte* buffer)
+void set_zero_position_cmd_handler(uint8_t* buffer)
 {
   // Read the command struct from the serial buffer to the correct struct
   cmdstruct_set_zero_position cmd_set_zero_position;

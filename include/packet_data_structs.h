@@ -22,6 +22,30 @@ enum cmd_identifier {
   set_zero_position = 16
 };
 
+//this is the max id of the commands, used for checking if the id is valid, not pretty but whatever
+int cmd_id_max = 16;
+
+//array of the command lengths, used for getting the length to read
+int cmd_lengths[] = {
+  sizeof(cmdstruct_set_serial_id),
+  sizeof(cmdstruct_enable_servo),
+  sizeof(cmdstruct_set_speed),
+  sizeof(cmdstruct_set_position),
+  sizeof(cmdstruct_get_speed),
+  sizeof(cmdstruct_get_position),
+  sizeof(cmdstruct_get_load),
+  sizeof(cmdstruct_get_volt),
+  sizeof(cmdstruct_get_temp),
+  sizeof(cmdstruct_get_isMoving),
+  sizeof(cmdstruct_get_all),
+  sizeof(cmdstruct_set_mode),
+  sizeof(cmdstruct_set_position),
+  sizeof(cmdstruct_set_speed),
+  sizeof(comdstruct_trigger_action),
+  sizeof(cmdstruct_set_motor_speed),
+  sizeof(cmdstruct_set_zero_position)
+};
+
 enum reply_identifier {
   reply_get_speed_id = 0,
   reply_get_position_id = 1,
@@ -97,6 +121,9 @@ struct cmdstruct_get_all {
   uint8_t servo_id; //1 byte
 };
 
+struct comdstruct_trigger_action {
+};
+
 struct replystruct_get_position {
   const uint8_t identifier = reply_get_position_id; //1 byte
   uint8_t servo_id; //1 byte
@@ -144,3 +171,21 @@ struct replystruct_get_all {
 };
 
 #pragma pack(pop)
+
+//union of all the structs
+union cmd_union {
+  cmdstruct_set_serial_id set_serial_id;
+  cmdstruct_enable_servo enable_servo;
+  cmdstruct_set_speed set_speed;
+  cmdstruct_set_position set_position;
+  cmdstruct_set_mode set_mode;
+  cmdstruct_set_zero_position set_zero_position;
+  cmdstruct_set_motor_speed set_motor_speed;
+  cmdstruct_get_position get_position;
+  cmdstruct_get_speed get_speed;
+  cmdstruct_get_volt get_volt;
+  cmdstruct_get_load get_load;
+  cmdstruct_get_temp get_temp;
+  cmdstruct_get_isMoving get_isMoving;
+  cmdstruct_get_all get_all;
+};

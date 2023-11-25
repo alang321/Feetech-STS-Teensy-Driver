@@ -1,5 +1,6 @@
 #include "host_serial_comms.h"
 #include <packet_data_handlers.h>
+#include <packet_data_structs.h>
 
 void initSerialComms() {
     serial_host_comms.begin(SERIAL_COMMS_BAUDRATE);
@@ -14,96 +15,81 @@ void sendData(uint8_t* data, size_t length) {
 
 bool receiveValidPacket(){
     if(serial_host_comms.available() > 0){
-        byte next_byte = serial_host_comms.read();
+        //read the next byte
+        uint8_t next_byte = serial_host_comms.read();
+        
+        //Do different things depending on the depth into the packet, 
+        //depth 0 and 1 check the start sequence, depth 2 checks the command id, depth 3 and onwards check the data and the checksum
+        //If the start sequence is not correct then depth is set to 0
+        //If the command id is not valid then depth is set to 0
+        switch (depth)
+        {
+            case 0:
+                if(next_byte == inbound_packet::startByte1)
+                    depth++;
+                break;
+            case 1:
+                if(serial_host_comms.read() == inbound_packet::startByte1){
+                    depth++;
+                }else{
+                    depth = 0;
+                }
+                break;
+            case 2:
+                //check if the command id is valid
+                if(inbound_pkt.set_cmd_id(next_byte)){
+                    depth++;
+                }else{
+                    #ifdef DEBUG
+                    Serial.println("Invalid command id, aborting packet read.");
+                    #endif
+                    depth = 0;
+                }
+                break;
+        default:
+            depth++;
+            
 
-        //check if this is the start of a packet
-        if(last_byte_valid && last_received_byte == inbound_pkt_ref.startByte1 && next_byte == inbound_pkt_ref.startByte2){
-            last_byte_valid = false;
+            //read the next byte into the buffer
+            buffer[depth - 2] = next_byte;
 
-            //read the command id
-            SERIAL_COMMS.readBytes((char*) &inbound_pkt_ref.cmd_id, 1);	
+            //check if we are reached the end of the data/checksum section of the packet
+            if(depth == inbound_pkt.get_total_length()){
+                //set the data and checksum in the inbound packet, if the checksum is invalid then abort the packet read
+                if(inbound_pkt.set_data_and_checksum(buffer)){
+                    //call the correct handler
+                    serial_cmd_handlers[inbound_pkt.get_cmd_id()](inbound_pkt.get_data());
+                }else{
+                    #ifdef DEBUG
+                    Serial.println("Invalid checksum, aborting packet read.");
+                    #endif
+                }
+                depth = 0;
+            }
+            else{
+                //check if there is a start sequence in the data, if there is then abort the packet read
+                //dont check the checksum if the nextbyte is the checksum byte
+                //because here there might be an unintended start sequence in the data, exteremely unlikely but possible if the checksum is 0xFF
+                if(next_byte == inbound_packet::startByte2 && last_received_byte == inbound_packet::startByte1 && depth != inbound_pkt.get_total_length()){
+                    //dont check the checksum if the nextbyte is the checksum byte
+                    depth = 2;
+                    #ifdef DEBUG
+                    Serial.println("Unexpected/early start sequence found in data, aborting packet read.");
+                    #endif
+                    break;
+                }
+            }
+            break;
+        }   
 
-            //read the data into correct struct
-
-            //check if the packet is valid
-
-            //call the correct handler
-
-            return true;
-        }
-
-        last_byte_valid = true;
         last_received_byte = next_byte;
-    }
-    return false;
-
-    //read byte
-
-
-    //check if read byte and last received byte are correct starting SERIAL_SERVOS_BAUDRATE
-
-    //if yes then go on to reading packet and checking cheksum, also so last read byte to null or set some flag
-
-    //if not then set last read byte to current read byte
-
-    
-    //last vreceived byte is this
-
-
-
-
-
-
-    
-    if(SERIAL_COMMS.available() > 0)
-    {
-    //read the first byte in the serial buffer
-    byte first_byte;
-    SERIAL_COMMS.readBytes((char*) &first_byte, 1);
-    //check if it is the start byte
-    if(first_byte != 0xBF)
-        return;
-
-    //read the second byte in the serial buffer
-    byte second_byte;
-    SERIAL_COMMS.readBytes((char*) &second_byte, 1);
-
-    //check if it is the second start byte
-    if(second_byte == 0xFF){
-        #ifdef DEBUG
-        unsigned long current_time = millis();
-
-        unsigned long time_since_last_message = current_time - last_time;
-        Serial.print("Received start marker, time since last message: ");
-        Serial.println(time_since_last_message);
-
-        last_time = current_time;
-
-        #endif
-
-        #ifdef DEBUG
-        Serial.println("received message");
-        #endif
-
-        // Read the command id
-        uint8_t cmd_id = 0;
-        SERIAL_COMMS.readBytes((char*) &cmd_id, 1);
-
-        #ifdef DEBUG
-        Serial.print("cmd_id: ");
-        Serial.println(cmd_id);
-        #endif
-
-        //call the correct handler
-        serial_cmd_handlers[cmd_id]();
-        }
     }
 }
 
-outbound_packet::outbound_packet(void* data, uint8_t data_length) {
+outbound_packet::outbound_packet(uint8_t* data, uint8_t data_length) {
     this->data = data;
     this->data_length = data_length;
-    this->checksum = calculateChecksum();
+    this->checksum = calculate_checksum();
 }
 
 uint8_t* outbound_packet::get_buffer() {
@@ -122,12 +108,68 @@ uint8_t outbound_packet::get_buffer_length() {
     return data_length + 3;
 }
 
-uint8_t outbound_packet::calculateChecksum() {
-    // crc 1 byte checksum
-    uint8_t checksum = 0;
-    for (int i = 0; i < data_length; i++) {
-        checksum += ((uint8_t*) data)[i];
+uint8_t outbound_packet::calculate_checksum() {
+        uint16_t sum = 0;
+
+    for (size_t i = 0; i < data_length; ++i) {
+        sum += data[i];
     }
-    return checksum;
+
+    return static_cast<uint8_t>(sum % 256);
+}
+
+
+bool inbound_packet::set_cmd_id(uint8_t cmd_id) {
+    if(cmd_id <= cmd_id_max){
+        this->cmd_id = cmd_id;
+        return true;
+    }else{
+        return false;
+    }
+}
+
+uint8_t inbound_packet::calculate_checksum() {
+    uint16_t sum = 0;
+
+    for (size_t i = 0; i < get_data_length(); ++i) {
+        sum += data[i];
+    }
+
+    return static_cast<uint8_t>(sum % 256);
+}
+
+uint8_t inbound_packet::get_data_and_checksum_length() {
+    return get_data_length() + 1;
+}
+
+bool inbound_packet::set_data_and_checksum(uint8_t* data_and_checksum) {
+    //check if the checksum is valid
+    received_checksum = data_and_checksum[get_data_and_checksum_length() - 1];
+    if(received_checksum == calculate_checksum()){
+        //free the old data
+        delete[] data;
+        //copy the data
+        data = new uint8_t[get_data_length()];
+        memcpy(data, data_and_checksum, get_data_length());
+        return true;
+    }else{
+        return false;
+    }
+}
+
+uint8_t inbound_packet::get_total_length() {
+    return get_data_and_checksum_length() + 2;
+}
+
+uint8_t inbound_packet::get_data_length() {
+    return cmd_lengths[cmd_id];
+}
+
+uint8_t* inbound_packet::get_data() {
+    return data;
+}
+
+uint8_t inbound_packet::get_cmd_id() {
+    return cmd_id;
 }
 
