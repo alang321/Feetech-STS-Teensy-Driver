@@ -7,36 +7,37 @@ void initSerialComms() {
 
 void sendData(uint8_t* data, size_t length) {
     //todo make this conform to the packet structure
-    not just data but also cmd_id
-    outbound_pkt.checksum = calculateChecksum(data, length);
+    outbound_packet outbound_pkt(data, length);
 
-    do the data stuff here
-
-    serial_host_comms.write(outbound_pkt.startByte1);
-    serial_host_comms.write(outbound_pkt.startByte2);
-    serial_host_comms.write(data, length);
-    serial_host_comms.write(outbound_pkt.checksum);
+    serial_host_comms.write(outbound_pkt.get_buffer(), outbound_pkt.get_buffer_length());
 }
 
-uint8_t calculateChecksum(uint8_t* data, size_t length) {
-    uint8_t checksum = 0;
-    calculate a proper checksum here
-    for (int i = 0; i < length; i++) {
-        checksum += data[i];
-    }
-    return checksum;
-}
+
 
 bool receiveValidPacket(){
     if(serial_host_comms.available() > 0){
         byte next_byte = serial_host_comms.read();
 
-        if(next_byte == 0xBF){
-            last_received_byte = next_byte;
-            last_byte_valid = true;
-            return false;
+        //check if this is the start of a packet
+        if(last_byte_valid && last_received_byte == inbound_pkt_ref.startByte1 && next_byte == inbound_pkt_ref.startByte2){
+            last_byte_valid = false;
+
+            //read the command id
+            SERIAL_COMMS.readBytes((char*) &inbound_pkt_ref.cmd_id, 1);	
+
+            //read the data into correct struct
+
+            //check if the packet is valid
+
+            //call the correct handler
+
+            return true;
         }
+
+        last_byte_valid = true;
+        last_received_byte = next_byte;
     }
+    return false;
 
     //read byte
 
@@ -99,5 +100,36 @@ bool receiveValidPacket(){
         serial_cmd_handlers[cmd_id]();
         }
     }
+}
+
+outbound_packet::outbound_packet(void* data, uint8_t data_length) {
+    this->data = data;
+    this->data_length = data_length;
+    this->checksum = calculateChecksum();
+}
+
+uint8_t* outbound_packet::get_buffer() {
+    uint8_t* buffer = new uint8_t[get_buffer_length()];
+    //starting seqeunce
+    buffer[0] = startByte1;
+    buffer[1] = startByte2;
+    //data
+    memcpy(buffer + 2, data, data_length);
+    //checksum
+    buffer[data_length + 2] = checksum;
+    return buffer;
+}
+
+uint8_t outbound_packet::get_buffer_length() {
+    return data_length + 3;
+}
+
+uint8_t outbound_packet::calculateChecksum() {
+    // crc 1 byte checksum
+    uint8_t checksum = 0;
+    for (int i = 0; i < data_length; i++) {
+        checksum += ((uint8_t*) data)[i];
+    }
+    return checksum;
 }
 

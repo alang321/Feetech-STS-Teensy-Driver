@@ -9,3 +9,9 @@
 #define MOTOR2_PWM_PIN 1
 
 #define MOTOR_INITIAL_PWM 1000
+
+enum motor_selectors {
+  motor1 = 1,
+  motor2 = 2,
+  all_motors = 0
+};

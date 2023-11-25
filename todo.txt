@@ -1,0 +1,11 @@
+
+
+fix feedback
+add the other sts library, just way better
+redo the checksum crc8
+struct bytes are padded, look into fixing the parsing from a serial.readbytes to a struct and the other way around, maybe union?
+
+
+
+
+

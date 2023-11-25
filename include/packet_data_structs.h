@@ -32,11 +32,6 @@ enum reply_identifier {
   reply_get_all_id = 6
 };
 
-enum motor_selectors {
-  motor1 = 1,
-  motor2 = 2,
-  all_motors = 0
-};
 
 struct cmdstruct_set_serial_id {
   uint8_t serialPort_id;

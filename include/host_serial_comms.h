@@ -3,21 +3,31 @@
 #include "arduino.h"
 #include <config.h>
 
-struct inbound_packet {
-  const uint8_t startByte1 = 0xBF;
-  const uint8_t startByte2 = 0xFF;
-  uint8_t cmd_id;
-  uint8_t data[255];
-  uint8_t checksum;
-} inbound_pkt;
+class outbound_packet {
+private:
+    const uint8_t startByte1 = 0xBF;
+    const uint8_t startByte2 = 0xFF;
+    void* data; //here the data includes a reply_id
+    uint8_t data_length;
+    uint8_t checksum;
 
-struct outbound_packet {
-  const uint8_t startByte1 = 0xBF;
-  const uint8_t startByte2 = 0xFF;
-  uint8_t reply_id;
-  uint8_t data[255];
-  uint8_t checksum;
-} outbound_pkt;
+    uint8_t calculateChecksum();
+public:
+    outbound_packet(void* data, uint8_t data_length);
+    uint8_t* get_buffer();
+    uint8_t get_buffer_length();
+} outbound_pkt_ref;
+
+class inbound_packet {
+public:
+    const uint8_t startByte1 = 0xBF;
+    const uint8_t startByte2 = 0xFF;
+private:
+    uint8_t cmd_id;
+    uint8_t data[255];
+    uint8_t checksum;
+}inbound_pkt_ref;
+
 
 byte last_received_byte = 0;
 bool last_byte_valid = false;

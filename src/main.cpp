@@ -4,8 +4,6 @@
 #include <servos.h>
 #include "config.h"
 
-void sendData(uint8_t* data, size_t length);
-
 #ifdef DEBUG
 unsigned long last_time = millis();
 #endif
