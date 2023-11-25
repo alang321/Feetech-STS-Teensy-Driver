@@ -32,9 +32,12 @@ enum reply_identifier {
   reply_get_all_id = 6
 };
 
+//pack the structs so that they are byte aligned, this is important for the serial communication
+//however, this will be slower than the default alignment
+#pragma pack(push, 1)
 
 struct cmdstruct_set_serial_id {
-  uint8_t serialPort_id;
+  uint8_t serialPort_id; // 1 byte
 };
 
 struct cmdstruct_enable_servo {
@@ -140,3 +143,4 @@ struct replystruct_get_all {
   int8_t temp;     //1 byte
 };
 
+#pragma pack(pop)

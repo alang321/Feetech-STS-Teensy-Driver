@@ -12,8 +12,6 @@ void sendData(uint8_t* data, size_t length) {
     serial_host_comms.write(outbound_pkt.get_buffer(), outbound_pkt.get_buffer_length());
 }
 
-
-
 bool receiveValidPacket(){
     if(serial_host_comms.available() > 0){
         byte next_byte = serial_host_comms.read();

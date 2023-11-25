@@ -233,8 +233,7 @@ void set_position_async_cmd_handler(byte* buffer)
   // Read the command struct from the serial buffer to the correct struct
   cmdstruct_set_position cmd_set_position_async;
 
-  cmd_set_position_async.servo_id = buffer[0];
-  cmd_set_position_async.position = (buffer[2] << 8) | buffer[1];
+  memcpy(&cmd_set_position_async, buffer, sizeof(cmd_set_position_async));
 
   #ifdef DEBUG
   Serial.print("cmd_set_position_async.servo_id: ");
@@ -254,8 +253,7 @@ void set_speed_async_cmd_handler(byte* buffer)
   // Read the command struct from the serial buffer to the correct struct
   cmdstruct_set_speed cmd_set_speed_async;
 
-  cmd_set_speed_async.servo_id = buffer[0];
-  cmd_set_speed_async.speed = (buffer[2] << 8) | buffer[1];
+  memcpy(&cmd_set_speed_async, buffer, sizeof(cmd_set_speed_async));
 
   #ifdef DEBUG
   Serial.print("cmd_set_speed_async.servo_id: ");
@@ -295,9 +293,7 @@ void set_motor_speed_cmd_handler(byte* buffer)
 {
   // Read the command struct from the serial buffer to the correct struct
   cmdstruct_set_motor_speed cmd_set_motor_speed;
-
-  cmd_set_motor_speed.motor_id = buffer[0];
-  cmd_set_motor_speed.pwm = (buffer[2] << 8) | buffer[1];
+  memcpy(&cmd_set_motor_speed, buffer, sizeof(cmd_set_motor_speed));
 
   //retrieve data from command struct
   int motor_id = cmd_set_motor_speed.motor_id;

@@ -3,7 +3,12 @@
 fix feedback
 add the other sts library, just way better
 redo the checksum crc8
-struct bytes are padded, look into fixing the parsing from a serial.readbytes to a struct and the other way around, maybe union?
+
+fix all the command handlers
+
+add an equal sign for the struct packing in python =
+
+make the async writing for every command, without explicit commands with a -1 servo id or smth
 
 
 
