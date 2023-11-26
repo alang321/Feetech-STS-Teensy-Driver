@@ -25,23 +25,27 @@ bool receiveValidPacket(){
         switch (depth)
         {
             case 0:
-                if(next_byte == inbound_packet::startByte1)
-                    depth++;
-                break;
-            case 1:
-                if(serial_host_comms.read() == inbound_packet::startByte1){
-                    depth++;
-                }else{
-                    depth = 0;
+                if(next_byte == inbound_packet::startByte2 && last_received_byte == inbound_packet::startByte1){
+                    depth = 2;
+                    #ifdef DEBUG
+                    Serial.println("Start sequence found.");
+                    #endif
                 }
                 break;
             case 2:
                 //check if the command id is valid
                 if(inbound_pkt.set_cmd_id(next_byte)){
                     depth++;
+                    #ifdef DEBUG
+                    Serial.println("Valid command id found.");
+                    Serial.print("Command id: ");
+                    Serial.println(next_byte);
+                    #endif
                 }else{
                     #ifdef DEBUG
                     Serial.println("Invalid command id, aborting packet read.");
+                    Serial.print("Command id: ");
+                    Serial.println(next_byte);
                     #endif
                     depth = 0;
                 }
@@ -54,35 +58,43 @@ bool receiveValidPacket(){
 
                 //check if we are reached the end of the data/checksum section of the packet
                 if(depth == inbound_pkt.get_total_length()){
+                    depth = 0;
                     //set the data and checksum in the inbound packet, if the checksum is invalid then abort the packet read
                     if(inbound_pkt.set_data_and_checksum(buffer)){
                         //call the correct handler
+                        #ifdef DEBUG
+                        Serial.println("Valid packet received.");
+                        #endif
                         serial_cmd_handlers[inbound_pkt.get_cmd_id()](inbound_pkt.get_data());
+                        last_received_byte = 0;
+                        return true;
                     }else{
                         #ifdef DEBUG
                         Serial.println("Invalid checksum, aborting packet read.");
+                        Serial.print("Received checksum: ");
+                        Serial.println(inbound_pkt.received_checksum);
+                        Serial.print("Calculated checksum: ");
+                        Serial.println(inbound_pkt.calculate_checksum());
                         #endif
                     }
-                    depth = 0;
                 }
-                else{
-                    //check if there is a start sequence in the data, if there is then abort the packet read
-                    //dont check the checksum if the nextbyte is the checksum byte
-                    //because here there might be an unintended start sequence in the data, exteremely unlikely but possible if the checksum is 0xFF
-                    if(next_byte == inbound_packet::startByte2 && last_received_byte == inbound_packet::startByte1 && depth != inbound_pkt.get_total_length()){
-                        //dont check the checksum if the nextbyte is the checksum byte
-                        depth = 2;
-                        #ifdef DEBUG
-                        Serial.println("Unexpected/early start sequence found in data, aborting packet read.");
-                        #endif
-                        break;
-                    }
+
+                //check if there is a start sequence in the data, if there is then abort the packet read
+                //dont check if the nextbyte was a valid checksum byte
+                //because here there might be an unintended start sequence in the data, extremely unlikely but possible if the checksum is 0xFF
+                //and the previous byte was 0xBF
+                if(next_byte == inbound_packet::startByte2 && last_received_byte == inbound_packet::startByte1){
+                    depth = 2;
+                    #ifdef DEBUG
+                    Serial.println("Unexpected early start sequence found in data, aborting packet read.");
+                    #endif
                 }
                 break;
         }   
 
         last_received_byte = next_byte;
     }
+    return false;
 }
 
 outbound_packet::outbound_packet(uint8_t* data, uint8_t data_length) {
@@ -114,7 +126,7 @@ uint8_t outbound_packet::calculate_checksum() {
         sum += data[i];
     }
 
-    return static_cast<uint8_t>(sum % 256);
+    return ~static_cast<uint8_t>(sum % 256);
 }
 
 
@@ -136,7 +148,7 @@ uint8_t inbound_packet::calculate_checksum() {
         sum += data[i];
     }
 
-    return static_cast<uint8_t>(sum % 256);
+    return ~static_cast<uint8_t>(sum % 256);
 }
 
 uint8_t inbound_packet::get_data_and_checksum_length() {

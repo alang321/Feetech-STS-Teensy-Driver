@@ -21,17 +21,16 @@ public:
 
 class inbound_packet {
 private:
-    uint8_t received_checksum;
     uint8_t* data;
-    uint8_t checksum;
     uint8_t cmd_id;
 
-    uint8_t calculate_checksum();
     uint8_t get_data_and_checksum_length(); //length of the data and checksum
 public:
+    uint8_t received_checksum;
     static const uint8_t startByte1 = 0xBF;
     static const uint8_t startByte2 = 0xFF;
 
+    uint8_t calculate_checksum();
     bool set_cmd_id(uint8_t cmd_id); //return false if the cmd_id is invalid
     bool set_data_and_checksum(uint8_t* data_and_checksum); //chops off the checksum
 

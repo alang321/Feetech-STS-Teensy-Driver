@@ -51,10 +51,7 @@ void set_speed_cmd_handler(uint8_t* buffer)
   Serial.println(cmd_set_speed.speed);
   #endif
 
-  //retrieve data from command struct
-  int servo_id = cmd_set_speed.servo_id;
-  int speed = cmd_set_speed.speed;
-  servos.setTargetVelocity(servo_id, speed);
+  servos.setTargetVelocity(cmd_set_speed.servo_id, cmd_set_speed.speed);
 }
 
 void set_position_cmd_handler(uint8_t* buffer)
@@ -69,11 +66,8 @@ void set_position_cmd_handler(uint8_t* buffer)
   Serial.print("cmd_set_position.position: ");
   Serial.println(cmd_set_position.position);
   #endif
-
-  //retrieve data from command struct
-  int servo_id = cmd_set_position.servo_id;
-  int position = cmd_set_position.position;
-  servos.setTargetPosition(servo_id, position);
+  
+  servos.setTargetPosition(cmd_set_position.servo_id, cmd_set_position.position);
 }
 
 void get_speed_cmd_handler(uint8_t* buffer)
@@ -87,14 +81,10 @@ void get_speed_cmd_handler(uint8_t* buffer)
   Serial.println(cmd_get_speed.servo_id);
   #endif
 
-  //retrieve data from command struct
-  int servo_id = cmd_get_speed.servo_id;
-  int speed = servos.getCurrentSpeed(servo_id);
-
   //send reply
   replystruct_get_speed reply_get_speed;
-  reply_get_speed.servo_id = servo_id;
-  reply_get_speed.speed = speed;
+  reply_get_speed.servo_id = cmd_get_speed.servo_id;
+  reply_get_speed.speed = servos.getCurrentSpeed(cmd_get_speed.servo_id);
 
   sendData((uint8_t*) &reply_get_speed, sizeof(replystruct_get_speed));
 }
@@ -105,14 +95,10 @@ void get_position_cmd_handler(uint8_t* buffer)
   cmdstruct_get_position cmd_get_position;
   memcpy(&cmd_get_position, buffer, sizeof(cmd_get_position));
 
-  //retrieve data from command struct
-  int servo_id = cmd_get_position.servo_id;
-  int position = servos.getCurrentPosition(servo_id);
-
   //send reply
   replystruct_get_position reply_get_position;
-  reply_get_position.servo_id = servo_id;
-  reply_get_position.position = position;
+  reply_get_position.servo_id = cmd_get_position.servo_id;
+  reply_get_position.position = servos.getCurrentPosition(cmd_get_position.servo_id);
 
   sendData((uint8_t*) &reply_get_position, sizeof(replystruct_get_position));
 }
@@ -123,14 +109,10 @@ void get_load_cmd_handler(uint8_t* buffer)
   cmdstruct_get_load cmd_get_load;
   memcpy(&cmd_get_load, buffer, sizeof(cmd_get_load));
 
-  //retrieve data from command struct
-  int servo_id = cmd_get_load.servo_id;
-  int load = servos.getCurrentLoad(servo_id);
-
   //send reply
   replystruct_get_load reply_get_load;
-  reply_get_load.servo_id = servo_id;
-  reply_get_load.load = load;
+  reply_get_load.servo_id = cmd_get_load.servo_id;
+  reply_get_load.load = servos.getCurrentLoad(cmd_get_load.servo_id);
 
   sendData((uint8_t*) &reply_get_load, sizeof(reply_get_load));
 }
@@ -141,14 +123,10 @@ void get_supply_volt_cmd_handler(uint8_t* buffer)
   cmdstruct_get_volt cmd_get_volt;
   memcpy(&cmd_get_volt, buffer, sizeof(cmd_get_volt));
 
-  //retrieve data from command struct
-  int servo_id = cmd_get_volt.servo_id;
-  int volt = servos.getCurrentSupplyVoltage(servo_id);
-
   //send reply
   replystruct_get_supply_volt reply_get_volt;
-  reply_get_volt.servo_id = servo_id;
-  reply_get_volt.volt = volt;
+  reply_get_volt.servo_id = cmd_get_volt.servo_id;
+  reply_get_volt.volt = servos.getCurrentSupplyVoltage(cmd_get_volt.servo_id);
 
   sendData((uint8_t*) &reply_get_volt, sizeof(replystruct_get_supply_volt));
 }
@@ -159,14 +137,10 @@ void get_temp_cmd_handler(uint8_t* buffer)
   cmdstruct_get_temp cmd_get_temp;
   memcpy(&cmd_get_temp, buffer, sizeof(cmd_get_temp));
 
-  //retrieve data from command struct
-  int servo_id = cmd_get_temp.servo_id;
-  int temp = servos.getCurrentTemperature(servo_id);
-
   //send reply
   replystruct_get_temp reply_get_temp;
-  reply_get_temp.servo_id = servo_id;
-  reply_get_temp.temp = temp;
+  reply_get_temp.servo_id = cmd_get_temp.servo_id;
+  reply_get_temp.temp = servos.getCurrentTemperature(cmd_get_temp.servo_id);
 
   sendData((uint8_t*) &reply_get_temp, sizeof(replystruct_get_temp));
 }
@@ -177,14 +151,10 @@ void get_isMoving_cmd_handler(uint8_t* buffer)
   cmdstruct_get_isMoving cmd_get_isMoving;
   memcpy(&cmd_get_isMoving, buffer, sizeof(cmd_get_isMoving));
 
-  //retrieve data from command struct
-  int servo_id = cmd_get_isMoving.servo_id;
-  bool isMoving = servos.isMoving(servo_id);
-
   //send reply
   replystruct_get_isMoving reply_get_isMoving;
-  reply_get_isMoving.servo_id = servo_id;
-  reply_get_isMoving.isMoving = isMoving;
+  reply_get_isMoving.servo_id = cmd_get_isMoving.servo_id;
+  reply_get_isMoving.isMoving = servos.isMoving(cmd_get_isMoving.servo_id);
 
   sendData((uint8_t*) &reply_get_isMoving, sizeof(replystruct_get_isMoving));
 }
@@ -194,16 +164,12 @@ void get_all_cmd_handler(uint8_t* buffer){
   cmdstruct_get_all cmd_get_all;
   memcpy(&cmd_get_all, buffer, sizeof(cmd_get_all));
 
-  #ifdef DEBUG
-  Serial.print("cmd_get_all.servo_id: ");
-  Serial.println(cmd_get_all.servo_id);
-  #endif
-
   //retrieve data
   STSServoDriver::all_feedback feedback = servos.getAll(cmd_get_all.servo_id);
 
-
   #ifdef DEBUG
+  Serial.print("cmd_get_all.servo_id: ");
+  Serial.println(cmd_get_all.servo_id);
   Serial.print("position: ");
   Serial.println(feedback.position);
   Serial.print("speed: ");
@@ -232,7 +198,6 @@ void set_position_async_cmd_handler(uint8_t* buffer)
 {
   // Read the command struct from the serial buffer to the correct struct
   cmdstruct_set_position cmd_set_position_async;
-
   memcpy(&cmd_set_position_async, buffer, sizeof(cmd_set_position_async));
 
   #ifdef DEBUG
@@ -242,17 +207,13 @@ void set_position_async_cmd_handler(uint8_t* buffer)
   Serial.println(cmd_set_position_async.position);
   #endif
 
-  //retrieve data from command struct
-  int servo_id = cmd_set_position_async.servo_id;
-  int position = cmd_set_position_async.position;
-  servos.setTargetPosition(servo_id, position, true);
+  servos.setTargetPosition(cmd_set_position_async.servo_id, cmd_set_position_async.position, true);
 }
 
 void set_speed_async_cmd_handler(uint8_t* buffer)
 {
   // Read the command struct from the serial buffer to the correct struct
   cmdstruct_set_speed cmd_set_speed_async;
-
   memcpy(&cmd_set_speed_async, buffer, sizeof(cmd_set_speed_async));
 
   #ifdef DEBUG
@@ -262,10 +223,7 @@ void set_speed_async_cmd_handler(uint8_t* buffer)
   Serial.println(cmd_set_speed_async.speed);
   #endif
 
-  //retrieve data from command struct
-  int servo_id = cmd_set_speed_async.servo_id;
-  int speed = cmd_set_speed_async.speed;
-  servos.setTargetVelocity(servo_id, speed, true);
+  servos.setTargetVelocity(cmd_set_speed_async.servo_id, cmd_set_speed_async.speed, true);
 }
 
 void trigger_action_cmd_handler(uint8_t* buffer)
@@ -292,20 +250,16 @@ void set_mode_cmd_handler(uint8_t* buffer)
 void set_motor_speed_cmd_handler(uint8_t* buffer)
 {
   // Read the command struct from the serial buffer to the correct struct
-  cmdstruct_set_motor_speed cmd_set_motor_speed;
-  memcpy(&cmd_set_motor_speed, buffer, sizeof(cmd_set_motor_speed));
-
-  //retrieve data from command struct
-  int motor_id = cmd_set_motor_speed.motor_id;
-  int pwm = cmd_set_motor_speed.pwm;
+  cmdstruct_set_motor_speed cmd;
+  memcpy(&cmd, buffer, sizeof(cmd));
   
-  if (motor_id == motor1 || motor_id == all_motors)
+  if (cmd.motor_id == motor1 || cmd.motor_id == all_motors)
   {
-    ESC1.writeMicroseconds(pwm);
+    ESC1.writeMicroseconds(cmd.pwm);
   }
-  if (motor_id == motor2 || motor_id == all_motors)
+  if (cmd.motor_id == motor2 || cmd.motor_id == all_motors)
   {
-    ESC2.writeMicroseconds(pwm);
+    ESC2.writeMicroseconds(cmd.pwm);
   }
 }
 

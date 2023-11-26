@@ -4,6 +4,20 @@ fix feedback
 
 make python datastructs
 
+broadcast id 254
+
+
+SYCNREAD DATA Query multiple servos at the same time. 0x82 Greater than or
+equal to 3
+SYCNWRITE DATA Controlling multiple servos at the same
+time.
+0x83 Not less than 2
+REGWRITE DATA Similar to WRITE DATA, but the control
+character does not act immediately after
+writing until ACTION.
+
+fix the communication protocol
+
 
 
 
