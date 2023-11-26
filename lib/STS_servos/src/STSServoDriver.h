@@ -139,10 +139,23 @@ class STSServoDriver
         /// \brief enable Torque
         bool enableTorque(byte const& servoId, bool const& enable);
 
+        /// \brief Change the position offset of a servo.
+        /// \param[in] servoId servo ID
+        /// \param[in] positionOffset new position offset
+        /// \return True if servo could successfully change position offset
+        bool setPositionOffset(byte const &servoId, int const &positionOffset);
+
+        /// \brief Change the target acceleration of a servo.
+        /// \param[in] servoId servo ID
+        /// \param[in] acceleration target acceleration
+        /// \return True if servo could successfully set target acceleration
+        bool setTargetAcceleration(byte const &servoId, byte const &acceleration, bool const &asynchronous = false);
+
         /// \brief Sets the servo zero position to the current position
         bool setZeroPosition(byte const& servoId);
 
-        /// \brief Set the servo mode. 1 for wheel mode, 0 for position mode.
+        /// \brief Set the servo mode.
+        /// \param[in] mode::[POSITION, CONTINUOUS, STEPPER]
         bool setMode(byte const& servoId, uint8_t const& mode);
 
         /// \brief Set target servo position.
@@ -152,6 +165,12 @@ class STSServoDriver
         /// \param[in] asynchronous If set, write is asynchronous (ACTION must be send to activate)
         /// \return True on success, false otherwise.
         bool setTargetPosition(byte const& servoId, int const& position, bool const& asynchronous = false);
+
+        /// @brief Sets the target positions for multiple servos simultaneously.
+        /// @param[in] servoIds Array of servo IDs to control.
+        /// @param[in] positions Array of target positions (corresponds to servoIds).
+        /// @param[in] speeds Array of target speeds (corresponds to servoIds).
+        void setTargetPositions(const byte  servoIds[], const int positions[], const int speeds[]);
 
         /// \brief Set target servo velocity.
         /// \note This function assumes that the amplification factor ANGULAR_RESOLUTION is set to 1.
@@ -200,10 +219,16 @@ class STSServoDriver
         int16_t readTwoBytesRegister(byte const& servoId, byte const& registerId);
 
     private:
-
-    
         /// @brief Combine bytes helper function
         uint16_t CompactBytes(uint8_t DataL, uint8_t DataH);
+
+        /// \brief convert to signed value in accordance to Feetech convention
+        /// bit 15 is the sign bit : 0: positive - 1 : negative
+        /// bit [0-14] is the absolute value. -10 = 0x800A (and not 0xFFF6)
+        /// \param[in] servoId ID of the servo
+        /// \param[in] registerId LSB register id.
+        /// \return Register value, 0 on failure.
+        int16_t convertToSigned(int val);
 
         
 
@@ -260,6 +285,16 @@ class STSServoDriver
                             byte const& startRegister,
                             byte const& readLength,
                             byte *outputBuffer);
+
+        /// @brief Send two bytes and update checksum  
+        /// @param[in] convertedValue Converted int value 
+        /// @param[out] checksum Update the checksum 
+        void sendAndUpdateChecksum(byte convertedValue[], byte &checksum);
+
+        /// @brief Convert int to pair of bytes
+        /// @param[in] value 
+        /// @param[out] result 
+        void convertIntToBytes(int const &value, byte result[2]);
 
         HardwareSerial *port_;
         IMXRT_LPUART_t* s_pkuart_;

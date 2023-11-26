@@ -56,6 +56,12 @@ void STSServoDriver::serialEnableOpenDrain(bool enable)
     }
 }
 
+int16_t STSServoDriver::convertToSigned(int val) {
+    if(val>0) return val;
+    val = 0x8000 | (-val & 0x7FFF);
+    return int16_t(val);
+}
+
 bool STSServoDriver::ping(byte const& servoId)
 {
     byte response[1] = {0xFF};
@@ -220,10 +226,29 @@ bool STSServoDriver::setTargetPosition(byte const& servoId, int const& position,
     return writeTwoBytesRegister(servoId, STSRegisters::TARGET_POSITION, position, asynchronous);
 }
 
+bool STSServoDriver::setPositionOffset(byte const &servoId, int const &positionOffset)
+{
+	if (!writeRegister(servoId, STSRegisters::WRITE_LOCK, 0))
+		return false;
+	// Write new position offset
+	if (!writeTwoBytesRegister(servoId, STSRegisters::POSITION_CORRECTION, positionOffset))
+		return false;
+	// Lock EEPROM
+	if (!writeRegister(servoId, STSRegisters::WRITE_LOCK, 1))
+		return false;
+	return true;
+}
+
+
+bool STSServoDriver::setTargetAcceleration(byte const &servoId, byte const &acceleration, bool const &asynchronous)
+{
+	return writeRegister(servoId, STSRegisters::TARGET_ACCELERATION, acceleration, asynchronous);
+}
+
 
 bool STSServoDriver::setTargetVelocity(byte const& servoId, int const& velocity, bool const& asynchronous)
 {
-    return writeTwoBytesRegister(servoId, STSRegisters::RUNNING_SPEED, velocity, asynchronous);
+    return writeTwoBytesRegister(servoId, STSRegisters::RUNNING_SPEED, convertToSigned(velocity), asynchronous);
 }
 
 bool STSServoDriver::enableTorque(byte const& servoId, bool const& enable)
@@ -376,4 +401,44 @@ int STSServoDriver::recieveMessage(byte const& servoId,
     for (int i = 0; i < readLength; i++)
         outputBuffer[i] = result[i + 4];
     return 0;
+}
+
+
+void STSServoDriver::convertIntToBytes(int const &value, byte result[2])
+{
+    result[0] = value & 0xFF;
+    result[1] = (value >> 8) & 0xFF;
+}
+
+void STSServoDriver::sendAndUpdateChecksum(byte convertedValue[], byte &checksum)
+{
+    port_->write(convertedValue, 2);
+    checksum += convertedValue[0] + convertedValue[1];
+}
+
+void STSServoDriver::setTargetPositions(const byte servoIds[],
+                                        const int positions[],
+                                        const int speeds[])
+{
+    port_->write(0xFF);
+    port_->write(0xFF);
+    port_->write(0XFE);
+    port_->write(sizeof(servoIds) * 7 + 4);
+    port_->write(instruction::SYNCWRITE);
+    port_->write(STSRegisters::TARGET_POSITION);
+    port_->write(6);
+    byte checksum = 0xFE + sizeof(servoIds) * 7 + 4 + instruction::SYNCWRITE + STSRegisters::TARGET_POSITION + 6;
+    for (int index = 0; index < sizeof(servoIds); index++)
+    {
+        checksum += servoIds[index];
+        port_->write(servoIds[index]);
+        byte intAsByte[2];
+        convertIntToBytes(positions[index], intAsByte);
+        sendAndUpdateChecksum(intAsByte, checksum);
+        port_->write(0);
+        port_->write(0);
+        convertIntToBytes(speeds[index], intAsByte);
+        sendAndUpdateChecksum(intAsByte, checksum);
+    }
+    port_->write(~checksum);
 }

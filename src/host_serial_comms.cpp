@@ -19,9 +19,10 @@ bool receiveValidPacket(){
         uint8_t next_byte = serial_host_comms.read();
         
         //Do different things depending on the depth into the packet, 
-        //depth 0 and 1 check the start sequence, depth 2 checks the command id, depth 3 and onwards check the data and the checksum
-        //If the start sequence is not correct then depth is set to 0
+        //depth 0 check for start sequence, depth 2 check the command id, depth 3 and onwards read the data and check the checksum
         //If the command id is not valid then depth is set to 0
+        //If the checksum is not valid then depth is set to 0
+        //If an early start sequence is found in the data then depth is set to 2
         switch (depth)
         {
             case 0:
