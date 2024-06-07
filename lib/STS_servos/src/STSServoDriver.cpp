@@ -262,7 +262,7 @@ int STSServoDriver::sendMessage(byte const& servoId,
     }
     message[5 + paramLength] = ~checksum;
 
-    port_->clear();
+    port_->flush();
     serialEnableOpenDrain(false);
     int ret = port_->write(message, 6 + paramLength);
     serialEnableOpenDrain(true);
